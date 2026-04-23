@@ -1,59 +1,84 @@
 # Product Catalogue — Apps Script Backend
 
-Drop these `.gs` files (and `appsscript.json`) into the same Apps Script
-project as your existing Odoo importer.
+These files go **into the Apps Script project that already contains your Odoo
+importer** (`Code.gs` / `populateProductsFromKosherPlace`). You do **not**
+replace anything — you add 5 new files alongside the existing `Code.gs`.
 
-## Files
+## Add these 5 files
 
-| File | Purpose |
+In the Apps Script editor, click ➕ next to "Files" → Script, and use these
+exact names. Paste contents from the corresponding file in this folder:
+
+| Add this filename | Paste from | Purpose |
+| --- | --- | --- |
+| `WebApp`     | `WebApp.gs`     | `doGet` / `doPost` router. Auth via `API_TOKEN`. |
+| `Utils`      | `Utils.gs`      | Sheet helpers, header-mapped read/write, lock, json. |
+| `Products`   | `Products.gs`   | `getProducts` — reads `Products` by header name. |
+| `Catalogues` | `Catalogues.gs` | List / load / save / delete / duplicate. |
+| `Odoo`       | `Odoo.gs`       | `refreshProductsFromOdoo` — calls your importer. |
+
+Your existing `Code.gs` (the Odoo importer) stays exactly as it is. Do not
+delete or rename it. The router calls `populateProductsFromKosherPlace` from
+your `Code.gs` automatically.
+
+## Update appsscript.json
+
+Open project settings → **"Show 'appsscript.json' manifest file"** if it isn't
+visible, then make sure the `webapp` block matches:
+
+```json
+{
+  "webapp": {
+    "executeAs": "USER_DEPLOYING",
+    "access": "ANYONE_ANONYMOUS"
+  }
+}
+```
+
+(The full file in this repo is `appsscript.json` — copy the `webapp` block
+into your existing manifest; don't overwrite the whole file if you already
+have other settings there.)
+
+## Script properties
+
+Project settings → Script properties → Add. Only one is required:
+
+| Key | Value |
 | --- | --- |
-| `Code.gs`        | `doGet` / `doPost` router. Auth via `API_TOKEN` script property. |
-| `Utils.gs`       | Sheet helpers, header-mapped read/write, metadata, lock, json. |
-| `Products.gs`    | `getProducts` — reads the `Products` sheet by header name. |
-| `Catalogues.gs`  | List / load / save / delete / duplicate. |
-| `Odoo.gs`        | `refreshProductsFromOdoo` — wraps the import function. |
-| `OdooImport.gs`  | The actual TKP Odoo importer (`populateProductsFromKosherPlace`). Reads Odoo creds from the `config` tab (B1:B4) and ignore patterns from `B9:B20`. |
+| `API_TOKEN`      | A long random string. Also goes in Vercel as `NEXT_PUBLIC_API_TOKEN`. |
+| `ODOO_IMPORT_FN` | *(optional)* Defaults to `populateProductsFromKosherPlace`. Set only if you renamed the function. |
+| `SPREADSHEET_ID` | *(optional)* Only if the project isn't bound to the right spreadsheet. |
 
-## One-time setup
+## Run `setup()` once
 
-1. Open your spreadsheet → **Extensions → Apps Script**.
-2. Add a new file for each `.gs` above and paste the contents.
-3. Open `appsscript.json` (Project Settings → "Show 'appsscript.json'") and
-   replace it with the version in this folder.
-4. **Project settings → Script properties** — add:
-   - `API_TOKEN` — long random string. Also goes into the SPA's `.env.local`.
-   - `ODOO_IMPORT_FN` *(optional)* — defaults to `populateProductsFromKosherPlace`,
-     which is what `OdooImport.gs` exports. Override only if you renamed it.
-   - `SPREADSHEET_ID` *(optional)* — only needed if the script isn't bound to
-     the right spreadsheet.
-5. Run `setup()` once from the editor. This creates the `Catalogues`,
-   `Catalogue_Items`, `Catalogue_Sources`, and `App_Metadata` tabs with the
-   correct headers. Your `Products` tab is left untouched.
-6. **Deploy → New deployment → Web app**:
-   - Description: anything.
-   - Execute as: **Me**.
-   - Who has access: **Anyone**.
-   - Click Deploy. Copy the `/exec` URL — that goes into the SPA env.
+In the editor, pick `setup` from the function dropdown → ▶. Approve the auth
+prompt. This creates four new tabs without touching `Products` or `config`:
 
-If you change the `.gs` files later, you must create a *new deployment* (or
-update the existing one with a new version) for the changes to take effect on
-the deployed URL.
+- `Catalogues`
+- `Catalogue_Items`
+- `Catalogue_Sources`
+- `App_Metadata`
 
-## How the Odoo refresh wrapper works
+## Deploy
 
-`refreshProductsFromOdoo` in `Odoo.gs` looks up the function name from the
-`ODOO_IMPORT_FN` script property and invokes it. That way:
+**Deploy → New deployment → Web app**:
 
-- We never duplicate your existing import logic.
-- Odoo credentials stay in *your* function (which presumably reads them from
-  Script properties — please don't accept them as request input).
-- After a successful run, we stamp `last_synced_at` in `App_Metadata` so the
-  UI can show when the data was last refreshed.
+- Description: anything.
+- Execute as: **Me**.
+- Who has access: **Anyone**.
+- Click Deploy. Copy the `…/exec` URL.
 
-If your existing function is in another file in the same Apps Script project,
-it'll be reachable via the global scope. If it lives in a separate project
-(library), import it as a library and proxy through a thin local function with
-the same name as `ODOO_IMPORT_FN`.
+If you've deployed before and just edited the `.gs` files: **Deploy → Manage
+deployments → ✏️ pencil → Version: New version → Deploy**. Same URL, new code.
+
+**Verify:** open the `…/exec` URL in a browser. You should see:
+
+```json
+{"ok":true,"service":"product-catalogue","ts":"…"}
+```
+
+If you instead see "Script function not found: doGet", the new files weren't
+saved or the deployment wasn't updated to a new version.
 
 ## API contract
 
@@ -87,7 +112,7 @@ Actions:
 
 Read/written by **header name** (column position can change).
 
-### Products *(existing)*
+### Products *(existing — your importer writes this)*
 Internal Reference, Product Name, Product Name (Hebrew), Product Barcode,
 UOM, Packaging, Packaging UOM, Packaging Barcode, Date Created, Product Tags,
 Product Category, Ecommerce Category, Sales Price, Wholesale Price, Image URL.

@@ -1,21 +1,24 @@
 /**
  * Product Catalogue — Apps Script Web App entry point.
  *
+ * IMPORTANT: this file is named "WebApp" (not "Code") on purpose, so it does
+ * NOT collide with the existing "Code.gs" that holds the Odoo importer
+ * (populateProductsFromKosherPlace).
+ *
  * Setup (one-time):
- *  1. Open the Google Sheet that holds the "Products" tab.
- *  2. Extensions → Apps Script. Paste these .gs files (Code, Utils, Products,
- *     Catalogues, Odoo) and the appsscript.json.
+ *  1. Open the Apps Script project that already has your Odoo importer.
+ *  2. Add 5 new files alongside your existing Code.gs:
+ *       WebApp, Utils, Products, Catalogues, Odoo
+ *     Do NOT touch your existing Code.gs.
  *  3. Project settings → Script properties:
  *       API_TOKEN          = a long random string (also goes in web/.env.local)
- *       SPREADSHEET_ID     = the id of the spreadsheet (optional — defaults to
- *                            the bound spreadsheet)
- *       ODOO_IMPORT_FN     = name of the existing function that imports from
- *                            Odoo into the Products sheet
- *                            (e.g. "importProductsFromOdoo")
- *  4. Deploy → New deployment → Web app
+ *       SPREADSHEET_ID     = optional — defaults to the bound spreadsheet
+ *       ODOO_IMPORT_FN     = optional — defaults to populateProductsFromKosherPlace
+ *  4. Run setup() once from the editor — creates the supporting tabs.
+ *  5. Deploy → New deployment → Web app
  *       Execute as: Me
  *       Who has access: Anyone (the token in the body is the auth)
- *  5. Copy the deployment URL into web/.env.local as
+ *  6. Copy the deployment URL into web/.env.local as
  *     NEXT_PUBLIC_APPS_SCRIPT_URL.
  *
  * Run `setup()` once from the editor to create the Catalogues, Catalogue_Items,
