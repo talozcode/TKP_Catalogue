@@ -8,37 +8,49 @@ import type {
   LoadCatalogueResponse
 } from './types';
 
-const URL = process.env.NEXT_PUBLIC_APPS_SCRIPT_URL!;
-const TOKEN = process.env.NEXT_PUBLIC_API_TOKEN!;
-
-if (typeof window !== 'undefined' && (!URL || !TOKEN)) {
-  // Surface configuration mistakes early in dev.
-  console.warn('[api] Missing NEXT_PUBLIC_APPS_SCRIPT_URL or NEXT_PUBLIC_API_TOKEN');
-}
-
-async function call<T>(action: string, params: Record<string, unknown> = {}): Promise<T> {
-  const res = await fetch(URL, {
-    method: 'POST',
-    // text/plain avoids the CORS preflight that Apps Script can't handle.
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ token: TOKEN, action, params })
+async function call<T>(
+  path: string,
+  init?: { method?: 'GET' | 'POST' | 'DELETE'; body?: unknown }
+): Promise<T> {
+  const res = await fetch(path, {
+    method: init?.method || 'GET',
+    headers: init?.body ? { 'Content-Type': 'application/json' } : undefined,
+    body: init?.body ? JSON.stringify(init.body) : undefined,
+    cache: 'no-store'
   });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const json = (await res.json()) as ApiResult<T>;
-  if (!json.ok) throw new Error(json.error || 'Unknown error');
+  let json: ApiResult<T> | undefined;
+  try {
+    json = (await res.json()) as ApiResult<T>;
+  } catch {
+    throw new Error(`HTTP ${res.status}`);
+  }
+  if (!res.ok || !json.ok) {
+    const msg = !json.ok ? json.error : `HTTP ${res.status}`;
+    throw new Error(msg || 'Unknown error');
+  }
   return json.data;
 }
 
 export const api = {
-  getProducts:              () => call<GetProductsResponse>('getProducts'),
-  refreshProductsFromOdoo:  () => call<{ lastSyncedAt: string; productCount: number }>('refreshProductsFromOdoo'),
-  listCatalogues:           () => call<{ catalogues: CatalogueSummary[] }>('listCatalogues'),
-  loadCatalogue:            (catalogueId: string) =>
-    call<LoadCatalogueResponse>('loadCatalogue', { catalogueId }),
-  saveCatalogue:            (payload: { catalogue: Partial<Catalogue>; items: CatalogueItem[]; sources: CatalogueSource[] }) =>
-    call<{ catalogueId: string; updatedAt: string }>('saveCatalogue', payload),
-  deleteCatalogue:          (catalogueId: string) =>
-    call<{ deleted: true }>('deleteCatalogue', { catalogueId }),
-  duplicateCatalogue:       (catalogueId: string, newName?: string) =>
-    call<{ catalogueId: string }>('duplicateCatalogue', { catalogueId, newName })
+  getProducts: () => call<GetProductsResponse>('/api/products'),
+  listCatalogues: () => call<{ catalogues: CatalogueSummary[] }>('/api/catalogues'),
+  loadCatalogue: (id: string) => call<LoadCatalogueResponse>(`/api/catalogues/${encodeURIComponent(id)}`),
+  saveCatalogue: (payload: {
+    catalogue: Partial<Catalogue>;
+    items: CatalogueItem[];
+    sources: CatalogueSource[];
+  }) =>
+    call<{ catalogueId: string; updatedAt: string }>('/api/catalogues', {
+      method: 'POST',
+      body: payload
+    }),
+  deleteCatalogue: (id: string) =>
+    call<{ deleted: true }>(`/api/catalogues/${encodeURIComponent(id)}`, {
+      method: 'DELETE'
+    }),
+  duplicateCatalogue: (id: string, newName?: string) =>
+    call<{ catalogueId: string }>(
+      `/api/catalogues/${encodeURIComponent(id)}/duplicate`,
+      { method: 'POST', body: newName ? { newName } : {} }
+    )
 };

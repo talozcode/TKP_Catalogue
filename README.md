@@ -1,25 +1,30 @@
 # Product Catalogue
 
-A production-ready web app for building, saving, and exporting product catalogues
-from a Google Sheet that is populated from Odoo by an existing Google Apps Script.
+A production-ready web app for building, saving, and exporting product
+catalogues from a Google Sheet that is populated from Odoo by an existing
+Google Apps Script.
 
 ## Architecture
 
 ```
 Browser (Next.js + TS + Tailwind)
         |
-        |  POST {APPS_SCRIPT_URL}  (text/plain JSON, token in body)
+        |  fetch /api/*  (same-origin, no token in browser)
         v
-Google Apps Script Web App
-        |  ↳ reads/writes Google Sheet (source of truth)
-        |  ↳ wraps existing Odoo import function (server-side only)
+Next.js API routes (Vercel serverless)
+        |  ↳ google-auth-library (service account JWT)
         v
-Google Sheet  ←  existing Apps Script Odoo importer
+Google Sheets API
+        |
+        v
+Google Sheet  ←  existing Apps Script Odoo importer (time-driven trigger)
 ```
 
-- Browser **never** talks to Odoo.
-- Odoo credentials live as Apps Script properties.
-- Sheet is the source of truth.
+- Browser **never** talks to Sheets directly — the service-account key
+  stays on the server.
+- Browser **never** talks to Odoo. The existing Apps Script importer
+  refreshes the `Products` tab on a schedule.
+- Sheet is the source of truth for both products and saved catalogues.
 - Products are cached in the browser; search runs in memory.
 - XLSX and PDF are built on the client.
 
@@ -27,24 +32,30 @@ Google Sheet  ←  existing Apps Script Odoo importer
 
 ```
 product-catalogue/
-├── apps-script/        Google Apps Script backend (paste into script.google.com)
-│   ├── Code.gs         doGet / doPost router + auth
-│   ├── Utils.gs        sheet + header-map helpers
-│   ├── Products.gs     getProducts
-│   ├── Catalogues.gs   list/load/save/delete/duplicate
-│   ├── Odoo.gs         refreshProductsFromOdoo (wraps existing import)
-│   └── appsscript.json
-└── web/                Next.js frontend
-    ├── app/            App Router pages
+└── web/                Next.js app (deploy this to Vercel)
+    ├── app/
+    │   ├── api/        /api/products, /api/catalogues, /api/setup
+    │   ├── page.tsx    main UI
+    │   └── ...
     ├── components/     UI
-    ├── lib/            API client, store, search, exporters
+    ├── lib/
+    │   ├── sheets.ts            Google Sheets client (server-only)
+    │   ├── catalogue-server.ts  business logic (server-only)
+    │   ├── api.ts               browser → /api/* client
+    │   └── ...
     └── ...
 ```
 
 ## Setup
 
-1. **Apps Script backend** — see `apps-script/README` section in the file headers.
-2. **Web app** — `cd web && npm install && cp .env.local.example .env.local`, then fill in `NEXT_PUBLIC_APPS_SCRIPT_URL` and `NEXT_PUBLIC_API_TOKEN`.
-3. `npm run dev` and open http://localhost:3000.
+See [`web/README.md`](web/README.md) for the full walkthrough:
 
-See the inline notes in each file for details and tradeoffs.
+1. Create a Google Cloud service account, download its JSON key, share
+   the spreadsheet with its email.
+2. Set `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY`,
+   `GOOGLE_SHEET_ID` in `web/.env.local` (and on Vercel).
+3. `cd web && npm install && npm run dev`.
+4. `curl -X POST http://localhost:3000/api/setup` once to create the
+   supporting tabs.
+5. In your existing Apps Script project, add a time-driven trigger on
+   `populateProductsFromKosherPlace` so the `Products` tab stays fresh.
