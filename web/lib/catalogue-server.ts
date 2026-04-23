@@ -19,6 +19,7 @@ import type {
   CatalogueItem,
   CatalogueSource,
   CatalogueSummary,
+  ColumnKey,
   ColumnsVisibility,
   ExportMode,
   GetProductsResponse,
@@ -111,9 +112,17 @@ export async function loadCatalogue(catalogueId: string): Promise<LoadCatalogueR
     }));
 
   let columnsVisibility: ColumnsVisibility = {};
+  let columnsOrder: ColumnKey[] = [];
   if (meta.columns_visibility_json) {
     try {
-      columnsVisibility = JSON.parse(String(meta.columns_visibility_json));
+      const parsed = JSON.parse(String(meta.columns_visibility_json));
+      // Backward compat: old shape was the visibility map directly.
+      if (parsed && typeof parsed === 'object' && 'visibility' in parsed) {
+        columnsVisibility = (parsed.visibility as ColumnsVisibility) || {};
+        columnsOrder = Array.isArray(parsed.order) ? (parsed.order as ColumnKey[]) : [];
+      } else {
+        columnsVisibility = parsed as ColumnsVisibility;
+      }
     } catch {
       // Ignore bad JSON — fall back to empty visibility map.
     }
@@ -127,6 +136,7 @@ export async function loadCatalogue(catalogueId: string): Promise<LoadCatalogueR
     showDiscountColumn: truthy(meta.show_discount_column),
     exportMode: (str(meta.export_mode) || 'customer') as ExportMode,
     columnsVisibility,
+    columnsOrder,
     createdAt: str(meta.created_at),
     updatedAt: str(meta.updated_at)
   };
@@ -163,7 +173,10 @@ export async function saveCatalogue(
     default_discount_percent: c.defaultDiscountPercent || 0,
     show_discount_column: !!c.showDiscountColumn,
     export_mode: c.exportMode || 'customer',
-    columns_visibility_json: JSON.stringify(c.columnsVisibility || {}),
+    columns_visibility_json: JSON.stringify({
+      visibility: c.columnsVisibility || {},
+      order: c.columnsOrder || []
+    }),
     created_at:
       rowIndex >= 0 && existing[rowIndex].created_at
         ? String(existing[rowIndex].created_at)

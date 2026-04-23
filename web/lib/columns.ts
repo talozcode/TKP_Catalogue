@@ -44,26 +44,57 @@ const ALL: ResolvedColumn[] = [
   { id: 'note',              label: 'Note',      align: 'left' }
 ];
 
+export const ALL_COLUMN_IDS: ColumnId[] = ALL.map((c) => c.id);
+export const DEFAULT_COLUMN_ORDER: ColumnId[] = [...ALL_COLUMN_IDS];
+export const COLUMN_LABELS: Record<ColumnId, string> = ALL.reduce(
+  (acc, c) => { acc[c.id] = c.label; return acc; },
+  {} as Record<ColumnId, string>
+);
+
+const COLUMN_BY_ID = new Map(ALL.map((c) => [c.id, c]));
+
 const HIDDEN_FROM_CUSTOMER: ColumnId[] = [
   'internalReference',
   'tags',
   'wholesalePrice'
 ];
 
+export function normalizeColumnOrder(order: ColumnId[] | undefined): ColumnId[] {
+  const seen = new Set<ColumnId>();
+  const out: ColumnId[] = [];
+  for (const id of order || []) {
+    if (COLUMN_BY_ID.has(id) && !seen.has(id)) {
+      out.push(id);
+      seen.add(id);
+    }
+  }
+  for (const id of ALL_COLUMN_IDS) {
+    if (!seen.has(id)) out.push(id);
+  }
+  return out;
+}
+
 export function resolveColumns(opts: {
   columns: ColumnsVisibility;
   showDiscountColumn: boolean;
   exportMode: ExportMode;
+  order?: ColumnId[];
 }): ResolvedColumn[] {
   const isCustomer = opts.exportMode === 'customer';
-  return ALL.filter((c) => {
+  const order = normalizeColumnOrder(opts.order);
+  const out: ResolvedColumn[] = [];
+  for (const id of order) {
+    const c = COLUMN_BY_ID.get(id);
+    if (!c) continue;
     if (c.id === 'discount' || c.id === 'finalPrice') {
-      return opts.showDiscountColumn;
+      if (!opts.showDiscountColumn) continue;
+    } else {
+      if (!opts.columns[c.id]) continue;
     }
-    if (!opts.columns[c.id]) return false;
-    if (isCustomer && HIDDEN_FROM_CUSTOMER.includes(c.id)) return false;
-    return true;
-  });
+    if (isCustomer && HIDDEN_FROM_CUSTOMER.includes(c.id)) continue;
+    out.push(c);
+  }
+  return out;
 }
 
 export type CellContext = {

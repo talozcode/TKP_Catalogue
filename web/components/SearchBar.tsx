@@ -1,5 +1,6 @@
 'use client';
-import { Search, X } from 'lucide-react';
+import { Search, X, Sparkles } from 'lucide-react';
+import clsx from 'clsx';
 import { Input } from './ui/Input';
 
 type Props = {
@@ -8,9 +9,12 @@ type Props = {
   tag: string;
   categories: string[];
   tags: string[];
+  onlyNew: boolean;
+  newCount: number;
   onQuery: (q: string) => void;
   onCategory: (c: string) => void;
   onTag: (t: string) => void;
+  onOnlyNew: (v: boolean) => void;
   resultCount: number;
 };
 
@@ -20,9 +24,12 @@ export function SearchBar({
   tag,
   categories,
   tags,
+  onlyNew,
+  newCount,
   onQuery,
   onCategory,
   onTag,
+  onOnlyNew,
   resultCount
 }: Props) {
   return (
@@ -76,11 +83,33 @@ export function SearchBar({
           ))}
         </select>
       </div>
-      <div className="mt-2 text-xs text-muted">
-        <span className="font-semibold text-ink tabular-nums">
-          {resultCount.toLocaleString()}
-        </span>{' '}
-        product{resultCount === 1 ? '' : 's'} matching your filters
+
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+        <div className="text-xs text-muted">
+          <span className="font-semibold text-ink tabular-nums">
+            {resultCount.toLocaleString()}
+          </span>{' '}
+          product{resultCount === 1 ? '' : 's'} matching your filters
+        </div>
+        <button
+          type="button"
+          onClick={() => onOnlyNew(!onlyNew)}
+          disabled={newCount === 0 && !onlyNew}
+          className={clsx(
+            'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition',
+            onlyNew
+              ? 'border-gold bg-goldSoft text-goldDeep shadow-sm'
+              : 'border-line bg-white text-muted hover:border-gold/60 hover:text-goldDeep',
+            newCount === 0 && !onlyNew && 'opacity-50'
+          )}
+          title={`Show only products added in the last 30 days${newCount ? ` (${newCount} available)` : ''}`}
+        >
+          <Sparkles size={12} />
+          New only
+          <span className="rounded-full bg-white/60 px-1.5 tabular-nums">
+            {newCount}
+          </span>
+        </button>
       </div>
     </div>
   );

@@ -2,11 +2,13 @@ import jsPDF from 'jspdf';
 import autoTable, { CellHookData } from 'jspdf-autotable';
 import type {
   CatalogueItem,
+  ColumnKey,
   ColumnsVisibility,
   ExportMode,
   Product
 } from './types';
 import { resolveColumns, cellText } from './columns';
+import { displayCatalogueName, fileBaseName } from './catalogue-name';
 
 const LOGO_URL =
   'https://res.cloudinary.com/dakhwegyt/image/upload/v1776678465/kp-primary_4x_totp25.png';
@@ -26,6 +28,7 @@ type ExportArgs = {
   defaultDiscountPercent: number;
   showDiscountColumn: boolean;
   columns: ColumnsVisibility;
+  columnsOrder: ColumnKey[];
   exportMode: ExportMode;
 };
 
@@ -68,8 +71,10 @@ export async function exportToPdf(args: ExportArgs) {
   const cols = resolveColumns({
     columns: args.columns,
     showDiscountColumn: args.showDiscountColumn,
-    exportMode: args.exportMode
+    exportMode: args.exportMode,
+    order: args.columnsOrder
   });
+  const docName = displayCatalogueName(args.catalogueName);
   const includeImages = cols.some((c) => c.id === 'image');
 
   const imageMap = new Map<string, ImageData | null>();
@@ -95,7 +100,7 @@ export async function exportToPdf(args: ExportArgs) {
   const pageH = doc.internal.pageSize.getHeight();
   const margin = 36;
 
-  const headerBottom = drawDocHeader(doc, args, logo, pageW, margin);
+  const headerBottom = drawDocHeader(doc, args, docName, logo, pageW, margin);
 
   const head = cols.map((c) => c.label);
   const body = args.items.map((it) => {
@@ -189,7 +194,7 @@ export async function exportToPdf(args: ExportArgs) {
       doc.setTextColor(MUTED[0], MUTED[1], MUTED[2]);
       doc.setFont('helvetica', 'normal');
       doc.text(
-        `The Kosher Place · ${args.catalogueName || 'Catalogue'}`,
+        `The Kosher Place · ${docName}`,
         margin,
         pageH - 18
       );
@@ -202,13 +207,13 @@ export async function exportToPdf(args: ExportArgs) {
     }
   });
 
-  const safeName = (args.catalogueName || 'catalogue').replace(/[^a-z0-9-_]+/gi, '_');
-  doc.save(`${safeName}.pdf`);
+  doc.save(`${fileBaseName(args.catalogueName)}.pdf`);
 }
 
 function drawDocHeader(
   doc: jsPDF,
   args: ExportArgs,
+  docName: string,
   logo: ImageData | null,
   pageW: number,
   margin: number
@@ -242,7 +247,7 @@ function drawDocHeader(
   doc.setFont('times', 'bold');
   doc.setFontSize(22);
   doc.setTextColor(BRAND[0], BRAND[1], BRAND[2]);
-  doc.text(args.catalogueName || 'Catalogue', titleX, top + 22);
+  doc.text(docName, titleX, top + 22);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);

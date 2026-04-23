@@ -5,9 +5,11 @@ import type {
   Catalogue,
   CatalogueItem,
   CatalogueSource,
+  ColumnKey,
   ColumnsVisibility,
   ExportMode
 } from './types';
+import { DEFAULT_COLUMN_ORDER, normalizeColumnOrder } from './columns';
 
 // Keep the working catalogue in memory (and a draft copy in localStorage so a
 // reload doesn't lose unsaved work). Saved catalogues live on the server.
@@ -20,11 +22,12 @@ type CatalogueState = {
   showDiscountColumn: boolean;
   exportMode: ExportMode;
   columnsVisibility: ColumnsVisibility;
+  columnsOrder: ColumnKey[];
   items: CatalogueItem[];
   sources: CatalogueSource[];
 
   // mutations
-  setMeta: (m: Partial<Pick<Catalogue, 'catalogueName' | 'notes' | 'defaultDiscountPercent' | 'showDiscountColumn' | 'exportMode' | 'columnsVisibility'>>) => void;
+  setMeta: (m: Partial<Pick<Catalogue, 'catalogueName' | 'notes' | 'defaultDiscountPercent' | 'showDiscountColumn' | 'exportMode' | 'columnsVisibility' | 'columnsOrder'>>) => void;
   addProduct: (productKey: string, source: AddedBySource) => void;
   addManyProducts: (keys: string[], source: AddedBySource) => void;
   removeProduct: (productKey: string) => void;
@@ -34,6 +37,8 @@ type CatalogueState = {
   addSource: (sourceType: 'category' | 'tag', sourceValue: string) => void;
   removeSource: (sourceType: 'category' | 'tag', sourceValue: string) => void;
   toggleColumn: (key: keyof ColumnsVisibility) => void;
+  setColumnsOrder: (order: ColumnKey[]) => void;
+  moveColumn: (fromIdx: number, toIdx: number) => void;
   clear: () => void;
   loadFromServer: (catalogue: Catalogue, items: CatalogueItem[], sources: CatalogueSource[]) => void;
   setSavedId: (id: string) => void;
@@ -58,12 +63,13 @@ const DEFAULT_COLUMNS: ColumnsVisibility = {
 function emptyState() {
   return {
     catalogueId: null as string | null,
-    catalogueName: 'Untitled catalogue',
+    catalogueName: '',
     notes: '',
     defaultDiscountPercent: 0,
     showDiscountColumn: false,
     exportMode: 'customer' as ExportMode,
     columnsVisibility: { ...DEFAULT_COLUMNS },
+    columnsOrder: [...DEFAULT_COLUMN_ORDER] as ColumnKey[],
     items: [] as CatalogueItem[],
     sources: [] as CatalogueSource[]
   };
@@ -180,6 +186,18 @@ export const useCatalogue = create<CatalogueState>()(
         set({ columnsVisibility: cv });
       },
 
+      setColumnsOrder: (order) => {
+        set({ columnsOrder: normalizeColumnOrder(order) as ColumnKey[] });
+      },
+
+      moveColumn: (fromIdx, toIdx) => {
+        const order = [...get().columnsOrder];
+        if (fromIdx < 0 || toIdx < 0 || fromIdx >= order.length || toIdx >= order.length) return;
+        const [moved] = order.splice(fromIdx, 1);
+        order.splice(toIdx, 0, moved);
+        set({ columnsOrder: order });
+      },
+
       clear: () => set(emptyState()),
 
       loadFromServer: (catalogue, items, sources) => {
@@ -191,6 +209,7 @@ export const useCatalogue = create<CatalogueState>()(
           showDiscountColumn: catalogue.showDiscountColumn,
           exportMode: catalogue.exportMode,
           columnsVisibility: { ...DEFAULT_COLUMNS, ...(catalogue.columnsVisibility || {}) },
+          columnsOrder: normalizeColumnOrder(catalogue.columnsOrder) as ColumnKey[],
           items,
           sources
         });
@@ -209,6 +228,7 @@ export const useCatalogue = create<CatalogueState>()(
         showDiscountColumn: s.showDiscountColumn,
         exportMode: s.exportMode,
         columnsVisibility: s.columnsVisibility,
+        columnsOrder: s.columnsOrder,
         items: s.items,
         sources: s.sources
       })

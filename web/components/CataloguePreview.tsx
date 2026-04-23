@@ -1,8 +1,9 @@
 'use client';
 import { ImageOff } from 'lucide-react';
 import clsx from 'clsx';
-import type { CatalogueItem, ColumnsVisibility, ExportMode, Product } from '@/lib/types';
+import type { CatalogueItem, ColumnKey, ColumnsVisibility, ExportMode, Product } from '@/lib/types';
 import { resolveColumns, cellText } from '@/lib/columns';
+import { displayCatalogueName } from '@/lib/catalogue-name';
 
 type Props = {
   catalogueName: string;
@@ -12,6 +13,7 @@ type Props = {
   defaultDiscountPercent: number;
   showDiscountColumn: boolean;
   columns: ColumnsVisibility;
+  columnsOrder: ColumnKey[];
   exportMode: ExportMode;
 };
 
@@ -23,9 +25,10 @@ export function CataloguePreview({
   defaultDiscountPercent,
   showDiscountColumn,
   columns,
+  columnsOrder,
   exportMode
 }: Props) {
-  const cols = resolveColumns({ columns, showDiscountColumn, exportMode });
+  const cols = resolveColumns({ columns, showDiscountColumn, exportMode, order: columnsOrder });
 
   if (!items.length) {
     return (
@@ -48,7 +51,7 @@ export function CataloguePreview({
       {/* Mock document header */}
       <div className="border-b-4 border-brand bg-gradient-to-r from-brandSoft/40 to-goldSoft/30 px-5 py-4">
         <div className="font-serif text-xl font-semibold text-brand">
-          {catalogueName || 'Untitled catalogue'}
+          {displayCatalogueName(catalogueName)}
         </div>
         {notes ? (
           <div className="mt-1 max-w-2xl text-sm leading-snug text-ink/70">

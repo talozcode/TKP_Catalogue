@@ -79,6 +79,7 @@ export type Catalogue = {
   showDiscountColumn: boolean;
   exportMode: ExportMode;
   columnsVisibility: ColumnsVisibility;
+  columnsOrder: ColumnKey[];
   createdAt: string;
   updatedAt: string;
 };

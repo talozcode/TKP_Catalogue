@@ -8,6 +8,7 @@ import { api } from '@/lib/api';
 import { useCatalogue, visibleItems } from '@/lib/store';
 import {
   buildIndex,
+  countNewProducts,
   productsByCategory,
   productsByTag,
   searchProducts
@@ -51,11 +52,13 @@ export default function Page() {
   const [query, setQuery]       = useState('');
   const [category, setCategory] = useState('');
   const [tag, setTag]           = useState('');
+  const [onlyNew, setOnlyNew]   = useState(false);
 
   const results = useMemo(
-    () => searchProducts(index, { query, category, tag }),
-    [index, query, category, tag]
+    () => searchProducts(index, { query, category, tag, onlyNew }),
+    [index, query, category, tag, onlyNew]
   );
+  const newCount = useMemo(() => countNewProducts(index), [index]);
 
   // Catalogue state
   const items                 = useCatalogue(visibleItems);
@@ -73,6 +76,7 @@ export default function Page() {
   const showDiscount          = useCatalogue((s) => s.showDiscountColumn);
   const exportMode            = useCatalogue((s) => s.exportMode);
   const columnsVisibility     = useCatalogue((s) => s.columnsVisibility);
+  const columnsOrder          = useCatalogue((s) => s.columnsOrder);
 
   const [showSave, setShowSave] = useState(false);
   const [showLoad, setShowLoad] = useState(false);
@@ -95,7 +99,8 @@ export default function Page() {
           defaultDiscountPercent: s.defaultDiscountPercent,
           showDiscountColumn: s.showDiscountColumn,
           exportMode: s.exportMode,
-          columnsVisibility: s.columnsVisibility
+          columnsVisibility: s.columnsVisibility,
+          columnsOrder: s.columnsOrder
         },
         items: s.items,
         sources: s.sources
@@ -162,6 +167,7 @@ export default function Page() {
       defaultDiscountPercent: s.defaultDiscountPercent,
       showDiscountColumn: s.showDiscountColumn,
       columns: s.columnsVisibility,
+      columnsOrder: s.columnsOrder,
       exportMode: s.exportMode
     });
   }
@@ -177,6 +183,7 @@ export default function Page() {
         defaultDiscountPercent: s.defaultDiscountPercent,
         showDiscountColumn: s.showDiscountColumn,
         columns: s.columnsVisibility,
+        columnsOrder: s.columnsOrder,
         exportMode: s.exportMode
       });
       toast.success('PDF ready');
@@ -198,9 +205,12 @@ export default function Page() {
               tag={tag}
               categories={index.categories}
               tags={index.tags}
+              onlyNew={onlyNew}
+              newCount={newCount}
               onQuery={setQuery}
               onCategory={setCategory}
               onTag={setTag}
+              onOnlyNew={setOnlyNew}
               resultCount={results.length}
             />
 
@@ -281,6 +291,7 @@ export default function Page() {
                   defaultDiscountPercent={discountPct}
                   showDiscountColumn={showDiscount}
                   columns={columnsVisibility}
+                  columnsOrder={columnsOrder}
                   exportMode={exportMode}
                 />
               )}

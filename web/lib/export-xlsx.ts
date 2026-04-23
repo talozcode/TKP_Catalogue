@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
-import type { CatalogueItem, ColumnsVisibility, ExportMode, Product } from './types';
+import type { CatalogueItem, ColumnKey, ColumnsVisibility, ExportMode, Product } from './types';
 import { resolveColumns, cellRaw } from './columns';
+import { fileBaseName } from './catalogue-name';
 
 type ExportArgs = {
   catalogueName: string;
@@ -9,6 +10,7 @@ type ExportArgs = {
   defaultDiscountPercent: number;
   showDiscountColumn: boolean;
   columns: ColumnsVisibility;
+  columnsOrder: ColumnKey[];
   exportMode: ExportMode;
 };
 
@@ -16,7 +18,8 @@ export function exportToXlsx(args: ExportArgs) {
   const cols = resolveColumns({
     columns: args.columns,
     showDiscountColumn: args.showDiscountColumn,
-    exportMode: args.exportMode
+    exportMode: args.exportMode,
+    order: args.columnsOrder
   }).filter((c) => c.id !== 'image');
 
   const headers = cols.map((c) => c.label);
@@ -35,6 +38,5 @@ export function exportToXlsx(args: ExportArgs) {
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Catalogue');
-  const safeName = (args.catalogueName || 'catalogue').replace(/[^a-z0-9-_]+/gi, '_');
-  XLSX.writeFile(wb, `${safeName}.xlsx`);
+  XLSX.writeFile(wb, `${fileBaseName(args.catalogueName)}.xlsx`);
 }

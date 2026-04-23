@@ -40,12 +40,24 @@ export type SearchFilters = {
   query: string;
   category?: string;
   tag?: string;
+  onlyNew?: boolean;
 };
+
+/** A product is "new" if its dateCreated is within this many days. */
+export const NEW_PRODUCT_DAYS = 30;
+
+export function isNewProduct(p: Product, now: number = Date.now()): boolean {
+  if (!p.dateCreated) return false;
+  const t = Date.parse(p.dateCreated);
+  if (Number.isNaN(t)) return false;
+  return now - t <= NEW_PRODUCT_DAYS * 24 * 60 * 60 * 1000;
+}
 
 export function searchProducts(index: ProductIndex, filters: SearchFilters): Product[] {
   const tokens = filters.query.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const cat = filters.category?.trim().toLowerCase() || '';
   const tag = filters.tag?.trim().toLowerCase() || '';
+  const now = Date.now();
 
   const out: Product[] = [];
   for (let i = 0; i < index.products.length; i++) {
@@ -53,6 +65,7 @@ export function searchProducts(index: ProductIndex, filters: SearchFilters): Pro
     const h = index.haystacks[i];
     if (cat && p.productCategory.toLowerCase() !== cat) continue;
     if (tag && !p.tags.some((t) => t.toLowerCase() === tag)) continue;
+    if (filters.onlyNew && !isNewProduct(p, now)) continue;
     let ok = true;
     for (const t of tokens) {
       if (!h.includes(t)) { ok = false; break; }
@@ -60,6 +73,12 @@ export function searchProducts(index: ProductIndex, filters: SearchFilters): Pro
     if (ok) out.push(p);
   }
   return out;
+}
+
+export function countNewProducts(index: ProductIndex, now: number = Date.now()): number {
+  let n = 0;
+  for (const p of index.products) if (isNewProduct(p, now)) n++;
+  return n;
 }
 
 /** Returns products whose category (case-insensitive) matches `category`. */

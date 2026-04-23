@@ -1,9 +1,10 @@
 'use client';
-import { Plus, Check, ImageOff } from 'lucide-react';
+import { Plus, Check, ImageOff, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import clsx from 'clsx';
 import type { Product } from '@/lib/types';
 import { formatMoney } from '@/lib/format';
+import { isNewProduct } from '@/lib/search';
 import { Badge } from './ui/Badge';
 
 type Props = {
@@ -14,6 +15,7 @@ type Props = {
 
 export function ProductCard({ product, inCatalogue, onAdd }: Props) {
   const [imgError, setImgError] = useState(false);
+  const isNew = isNewProduct(product);
   return (
     <div
       className={clsx(
@@ -39,6 +41,11 @@ export function ProductCard({ product, inCatalogue, onAdd }: Props) {
             <ImageOff size={32} />
           </div>
         )}
+        {isNew ? (
+          <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-gold px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm">
+            <Sparkles size={10} /> New
+          </span>
+        ) : null}
         <button
           onClick={onAdd}
           className={clsx(
