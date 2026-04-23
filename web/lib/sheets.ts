@@ -23,9 +23,20 @@ function getEnv(): { email: string; key: string; sheetId: string } {
       'Missing GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_PRIVATE_KEY, or GOOGLE_SHEET_ID'
     );
   }
-  // Vercel stores newlines as the literal string "\n" — convert back.
-  key = key.replace(/\\n/g, '\n');
+  key = normalizePrivateKey(key);
   return { email, key, sheetId };
+}
+
+function normalizePrivateKey(raw: string): string {
+  let k = raw.trim();
+  // Strip surrounding quotes if the value was pasted with JSON quoting.
+  if ((k.startsWith('"') && k.endsWith('"')) || (k.startsWith("'") && k.endsWith("'"))) {
+    k = k.slice(1, -1);
+  }
+  // Vercel sometimes stores newlines as the literal string "\n" — convert back.
+  k = k.replace(/\\n/g, '\n');
+  if (!k.endsWith('\n')) k += '\n';
+  return k;
 }
 
 export function spreadsheetId(): string {
