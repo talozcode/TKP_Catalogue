@@ -14,12 +14,25 @@ type Props = {
   resultCount: number;
 };
 
-export function SearchBar({ query, category, tag, categories, tags, onQuery, onCategory, onTag, resultCount }: Props) {
+export function SearchBar({
+  query,
+  category,
+  tag,
+  categories,
+  tags,
+  onQuery,
+  onCategory,
+  onTag,
+  resultCount
+}: Props) {
   return (
-    <div className="rounded-xl border border-line bg-white p-3 shadow-card">
+    <div className="rounded-2xl border border-line bg-white p-3 shadow-card">
       <div className="flex flex-col gap-2 md:flex-row md:items-center">
         <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={16} />
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+            size={16}
+          />
           <Input
             value={query}
             onChange={(e) => onQuery(e.target.value)}
@@ -29,7 +42,7 @@ export function SearchBar({ query, category, tag, categories, tags, onQuery, onC
           {query ? (
             <button
               onClick={() => onQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted hover:bg-slate-100"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted hover:bg-brandSoft hover:text-brand"
               aria-label="Clear search"
             >
               <X size={14} />
@@ -40,22 +53,35 @@ export function SearchBar({ query, category, tag, categories, tags, onQuery, onC
         <select
           value={category}
           onChange={(e) => onCategory(e.target.value)}
-          className="h-9 rounded-md border border-line bg-white px-2 text-sm md:w-56"
+          className="h-9 rounded-md border border-line bg-white px-2 text-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 md:w-56"
         >
           <option value="">All categories</option>
-          {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+          {categories.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
         </select>
 
         <select
           value={tag}
           onChange={(e) => onTag(e.target.value)}
-          className="h-9 rounded-md border border-line bg-white px-2 text-sm md:w-48"
+          className="h-9 rounded-md border border-line bg-white px-2 text-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 md:w-48"
         >
           <option value="">All tags</option>
-          {tags.map((t) => <option key={t} value={t}>{t}</option>)}
+          {tags.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
         </select>
       </div>
-      <div className="mt-2 text-xs text-muted">{resultCount.toLocaleString()} products</div>
+      <div className="mt-2 text-xs text-muted">
+        <span className="font-semibold text-ink tabular-nums">
+          {resultCount.toLocaleString()}
+        </span>{' '}
+        product{resultCount === 1 ? '' : 's'} matching your filters
+      </div>
     </div>
   );
 }

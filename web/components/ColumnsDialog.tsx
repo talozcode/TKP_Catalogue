@@ -2,6 +2,25 @@
 import { Dialog } from './ui/Dialog';
 import type { ColumnKey, ColumnsVisibility } from '@/lib/types';
 
+const GROUPS: Array<{ title: string; cols: ColumnKey[] }> = [
+  {
+    title: 'Identification',
+    cols: ['image', 'internalReference', 'productName', 'barcode']
+  },
+  {
+    title: 'Packaging & classification',
+    cols: ['uom', 'packaging', 'category', 'tags']
+  },
+  {
+    title: 'Pricing',
+    cols: ['salesPrice', 'wholesalePrice', 'discount', 'finalPrice']
+  },
+  {
+    title: 'Custom',
+    cols: ['note']
+  }
+];
+
 const LABELS: Record<ColumnKey, string> = {
   image: 'Image',
   internalReference: 'Internal Reference',
@@ -27,23 +46,37 @@ type Props = {
 
 export function ColumnsDialog({ open, onClose, columns, onToggle }: Props) {
   return (
-    <Dialog open={open} onClose={onClose} title="Visible columns">
-      <div className="grid grid-cols-2 gap-2">
-        {(Object.keys(LABELS) as ColumnKey[]).map((k) => (
-          <label key={k} className="flex items-center gap-2 rounded p-1 text-sm hover:bg-slate-50">
-            <input
-              type="checkbox"
-              checked={!!columns[k]}
-              onChange={() => onToggle(k)}
-            />
-            {LABELS[k]}
-          </label>
+    <Dialog open={open} onClose={onClose} title="Visible columns" width="max-w-xl">
+      <p className="mb-4 text-sm text-muted">
+        Pick what shows in the preview and exports. Discount % and Final price
+        also need the <em className="text-ink">Show discount column</em> toggle on
+        the toolbar.
+      </p>
+      <div className="space-y-4">
+        {GROUPS.map((g) => (
+          <section key={g.title}>
+            <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-gold">
+              {g.title}
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {g.cols.map((k) => (
+                <label
+                  key={k}
+                  className="flex cursor-pointer items-center gap-2 rounded-md border border-transparent px-2 py-1.5 text-sm hover:border-line hover:bg-bg"
+                >
+                  <input
+                    type="checkbox"
+                    checked={!!columns[k]}
+                    onChange={() => onToggle(k)}
+                    className="h-4 w-4 accent-brand"
+                  />
+                  {LABELS[k]}
+                </label>
+              ))}
+            </div>
+          </section>
         ))}
       </div>
-      <p className="mt-3 text-xs text-muted">
-        Affects exports. Discount % and Final price also need the
-        <em> Show discount column</em> toggle to be on.
-      </p>
     </Dialog>
   );
 }

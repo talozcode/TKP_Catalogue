@@ -2,7 +2,7 @@
 import clsx from 'clsx';
 import { ButtonHTMLAttributes, forwardRef } from 'react';
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'gold';
 type Size = 'sm' | 'md';
 
 type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -11,13 +11,14 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 const base =
-  'inline-flex items-center justify-center gap-1.5 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent';
+  'inline-flex items-center justify-center gap-1.5 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40';
 
 const variants: Record<Variant, string> = {
-  primary:   'bg-ink text-white hover:bg-slate-800',
-  secondary: 'bg-white text-ink border border-line hover:bg-slate-50',
-  ghost:     'bg-transparent text-ink hover:bg-slate-100',
-  danger:    'bg-red-600 text-white hover:bg-red-700'
+  primary: 'bg-brand text-white shadow-sm hover:bg-brandDeep',
+  secondary: 'bg-white text-ink border border-line hover:border-brand/40 hover:text-brand',
+  ghost: 'bg-transparent text-ink hover:bg-brandSoft hover:text-brand',
+  danger: 'bg-white text-red-700 border border-red-200 hover:bg-red-50',
+  gold: 'bg-gold text-white hover:bg-goldDeep'
 };
 
 const sizes: Record<Size, string> = {

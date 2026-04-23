@@ -1,7 +1,8 @@
 'use client';
 import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Folder, Tag } from 'lucide-react';
+import { Folder, Tag, ListChecks, Eye } from 'lucide-react';
+import clsx from 'clsx';
 
 import { api } from '@/lib/api';
 import { useCatalogue, visibleItems } from '@/lib/store';
@@ -18,6 +19,7 @@ import { Header } from '@/components/Header';
 import { SearchBar } from '@/components/SearchBar';
 import { ProductGrid } from '@/components/ProductGrid';
 import { CataloguePanel } from '@/components/CataloguePanel';
+import { CataloguePreview } from '@/components/CataloguePreview';
 import { CatalogueToolbar } from '@/components/CatalogueToolbar';
 import { SaveCatalogueDialog } from '@/components/SaveCatalogueDialog';
 import { LoadCatalogueDialog } from '@/components/LoadCatalogueDialog';
@@ -25,6 +27,8 @@ import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { toast } from '@/components/ui/Toast';
 import type { CatalogueSummary } from '@/lib/types';
+
+type PaneTab = 'build' | 'preview';
 
 export default function Page() {
   const qc = useQueryClient();
@@ -37,7 +41,6 @@ export default function Page() {
   const products = productsQuery.data?.products ?? [];
   const lastSyncedAt = productsQuery.data?.lastSyncedAt ?? null;
 
-  // Build the search index once per fetch — not on every keystroke.
   const index = useMemo(() => buildIndex(products), [products]);
   const productByKey = useMemo(() => {
     const m = new Map<string, typeof products[number]>();
@@ -55,19 +58,25 @@ export default function Page() {
   );
 
   // Catalogue state
-  const items        = useCatalogue(visibleItems);
-  const itemKeys     = useMemo(() => new Set(items.map((i) => i.productKey)), [items]);
-  const addProduct   = useCatalogue((s) => s.addProduct);
-  const addMany      = useCatalogue((s) => s.addManyProducts);
-  const addSource    = useCatalogue((s) => s.addSource);
-  const clear        = useCatalogue((s) => s.clear);
-  const setSavedId   = useCatalogue((s) => s.setSavedId);
-  const loadFromSrv  = useCatalogue((s) => s.loadFromServer);
-  const cs           = useCatalogue.getState;
+  const items                 = useCatalogue(visibleItems);
+  const itemKeys              = useMemo(() => new Set(items.map((i) => i.productKey)), [items]);
+  const addProduct            = useCatalogue((s) => s.addProduct);
+  const addMany               = useCatalogue((s) => s.addManyProducts);
+  const addSource             = useCatalogue((s) => s.addSource);
+  const clear                 = useCatalogue((s) => s.clear);
+  const setSavedId            = useCatalogue((s) => s.setSavedId);
+  const loadFromSrv           = useCatalogue((s) => s.loadFromServer);
+  const cs                    = useCatalogue.getState;
+  const catalogueName         = useCatalogue((s) => s.catalogueName);
+  const notes                 = useCatalogue((s) => s.notes);
+  const discountPct           = useCatalogue((s) => s.defaultDiscountPercent);
+  const showDiscount          = useCatalogue((s) => s.showDiscountColumn);
+  const exportMode            = useCatalogue((s) => s.exportMode);
+  const columnsVisibility     = useCatalogue((s) => s.columnsVisibility);
 
-  // Save / Load dialogs
   const [showSave, setShowSave] = useState(false);
   const [showLoad, setShowLoad] = useState(false);
+  const [tab, setTab] = useState<PaneTab>('build');
 
   const cataloguesQuery = useQuery({
     queryKey: ['catalogues'],
@@ -80,15 +89,15 @@ export default function Page() {
       const s = cs();
       return api.saveCatalogue({
         catalogue: {
-          catalogueId:            s.catalogueId || undefined,
-          catalogueName:          newName || s.catalogueName,
-          notes:                  s.notes,
+          catalogueId: s.catalogueId || undefined,
+          catalogueName: newName || s.catalogueName,
+          notes: s.notes,
           defaultDiscountPercent: s.defaultDiscountPercent,
-          showDiscountColumn:     s.showDiscountColumn,
-          exportMode:             s.exportMode,
-          columnsVisibility:      s.columnsVisibility
+          showDiscountColumn: s.showDiscountColumn,
+          exportMode: s.exportMode,
+          columnsVisibility: s.columnsVisibility
         },
-        items:   s.items,        // includes manuallyRemoved flags so removals stick
+        items: s.items,
         sources: s.sources
       });
     },
@@ -129,7 +138,6 @@ export default function Page() {
     onError: (e: Error) => toast.error(e.message)
   });
 
-  // Bulk-add handlers
   function addByCategory() {
     if (!category) return;
     const keys = productsByCategory(index, category).map((p) => p.internalReference);
@@ -157,25 +165,31 @@ export default function Page() {
       exportMode: s.exportMode
     });
   }
-  function doExportPdf() {
+  async function doExportPdf() {
     const s = cs();
-    exportToPdf({
-      catalogueName: s.catalogueName,
-      notes: s.notes,
-      items: visibleItems(s),
-      productByKey,
-      defaultDiscountPercent: s.defaultDiscountPercent,
-      showDiscountColumn: s.showDiscountColumn,
-      columns: s.columnsVisibility,
-      exportMode: s.exportMode
-    });
+    toast.info('Building PDF…');
+    try {
+      await exportToPdf({
+        catalogueName: s.catalogueName,
+        notes: s.notes,
+        items: visibleItems(s),
+        productByKey,
+        defaultDiscountPercent: s.defaultDiscountPercent,
+        showDiscountColumn: s.showDiscountColumn,
+        columns: s.columnsVisibility,
+        exportMode: s.exportMode
+      });
+      toast.success('PDF ready');
+    } catch (e) {
+      toast.error((e as Error).message || 'PDF export failed');
+    }
   }
 
   return (
     <>
       <Header lastSyncedAt={lastSyncedAt} productCount={products.length} />
-      <main className="mx-auto max-w-screen-2xl px-4 py-4">
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_420px]">
+      <main className="mx-auto max-w-screen-2xl px-4 py-5 md:px-6">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_460px]">
           {/* Left: search + grid */}
           <section className="space-y-3">
             <SearchBar
@@ -193,12 +207,12 @@ export default function Page() {
             {(category || tag) ? (
               <div className="flex flex-wrap gap-2">
                 {category ? (
-                  <Button size="sm" onClick={addByCategory}>
+                  <Button size="sm" variant="primary" onClick={addByCategory}>
                     <Folder size={14} /> Add all {results.length} in “{category}”
                   </Button>
                 ) : null}
                 {tag ? (
-                  <Button size="sm" onClick={addByTag}>
+                  <Button size="sm" variant="primary" onClick={addByTag}>
                     <Tag size={14} /> Add all {results.length} tagged “{tag}”
                   </Button>
                 ) : null}
@@ -210,7 +224,7 @@ export default function Page() {
                 <Spinner /> Loading products from Google Sheets…
               </div>
             ) : productsQuery.isError ? (
-              <div className="rounded border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
                 {(productsQuery.error as Error).message}
               </div>
             ) : (
@@ -223,17 +237,53 @@ export default function Page() {
           </section>
 
           {/* Right: catalogue */}
-          <aside className="space-y-3 lg:sticky lg:top-[68px] lg:self-start">
+          <aside className="space-y-3 lg:sticky lg:top-[80px] lg:self-start">
             <CatalogueToolbar
               itemCount={items.length}
-              onClear={() => { if (confirm('Clear the current catalogue?')) clear(); }}
+              onClear={() => {
+                if (confirm('Clear the current catalogue?')) clear();
+              }}
               onSave={() => setShowSave(true)}
               onLoad={() => setShowLoad(true)}
               onExportXlsx={doExportXlsx}
               onExportPdf={doExportPdf}
             />
-            <div className="max-h-[calc(100vh-260px)] overflow-y-auto pr-1">
-              <CataloguePanel productByKey={productByKey} />
+
+            {/* Build / Preview tabs */}
+            <div className="inline-flex rounded-xl border border-line bg-white p-1 shadow-card">
+              <TabButton active={tab === 'build'} onClick={() => setTab('build')}>
+                <ListChecks size={14} /> Build ({items.length})
+              </TabButton>
+              <TabButton
+                active={tab === 'preview'}
+                onClick={() => setTab('preview')}
+              >
+                <Eye size={14} /> Preview
+              </TabButton>
+            </div>
+
+            <div
+              className={clsx(
+                'scrollbar-thin pr-1',
+                tab === 'build'
+                  ? 'max-h-[calc(100vh-310px)] overflow-y-auto'
+                  : 'max-h-[calc(100vh-310px)] overflow-auto'
+              )}
+            >
+              {tab === 'build' ? (
+                <CataloguePanel productByKey={productByKey} />
+              ) : (
+                <CataloguePreview
+                  catalogueName={catalogueName}
+                  notes={notes}
+                  items={items}
+                  productByKey={productByKey}
+                  defaultDiscountPercent={discountPct}
+                  showDiscountColumn={showDiscount}
+                  columns={columnsVisibility}
+                  exportMode={exportMode}
+                />
+              )}
             </div>
           </aside>
         </div>
@@ -257,5 +307,29 @@ export default function Page() {
         onDelete={(id) => deleteMut.mutate(id)}
       />
     </>
+  );
+}
+
+function TabButton({
+  active,
+  onClick,
+  children
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={clsx(
+        'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition',
+        active
+          ? 'bg-brand text-white shadow-sm'
+          : 'text-ink/70 hover:bg-brandSoft hover:text-brand'
+      )}
+    >
+      {children}
+    </button>
   );
 }

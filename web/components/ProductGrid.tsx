@@ -20,7 +20,7 @@ export function ProductGrid({ products, inCatalogueKeys, onAdd }: Props) {
 
   if (!products.length) {
     return (
-      <div className="rounded-xl border border-dashed border-line bg-white p-8 text-center text-muted">
+      <div className="rounded-2xl border border-dashed border-line bg-white p-8 text-center text-sm text-muted">
         No products match your filters.
       </div>
     );
@@ -39,12 +39,12 @@ export function ProductGrid({ products, inCatalogueKeys, onAdd }: Props) {
         ))}
       </div>
       {hasMore ? (
-        <div className="mt-4 flex justify-center">
+        <div className="mt-5 flex justify-center">
           <button
-            className="rounded-md border border-line bg-white px-4 py-2 text-sm hover:bg-slate-50"
+            className="rounded-full border border-line bg-white px-5 py-2 text-sm font-medium text-ink shadow-sm transition hover:border-brand hover:text-brand"
             onClick={() => setCount((c) => c + PAGE)}
           >
-            Show more ({products.length - count} more)
+            Show {Math.min(PAGE, products.length - count)} more · {products.length - count} remaining
           </button>
         </div>
       ) : null}
