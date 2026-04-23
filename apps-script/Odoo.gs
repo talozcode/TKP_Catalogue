@@ -12,15 +12,14 @@
  * stamps `last_synced_at` in App_Metadata after a successful run.
  */
 function refreshProductsFromOdoo(_params) {
-  var fnName = PropertiesService.getScriptProperties().getProperty('ODOO_IMPORT_FN');
-  if (!fnName) {
-    throw new Error('ODOO_IMPORT_FN script property is not set. ' +
-      'Set it to the name of your existing Odoo import function.');
-  }
+  // Default to the canonical TKP importer if the property isn't set, so the
+  // wrapper works out of the box once OdooImport.gs is in the project.
+  var fnName = PropertiesService.getScriptProperties().getProperty('ODOO_IMPORT_FN')
+    || 'populateProductsFromKosherPlace';
   var fn = this[fnName] || globalThis[fnName];
   if (typeof fn !== 'function') {
     throw new Error('Function "' + fnName + '" was not found in this script project. ' +
-      'Make sure the existing import .gs file is part of the same project.');
+      'Add OdooImport.gs (or set ODOO_IMPORT_FN to a function that exists here).');
   }
 
   var startedAt = nowIso_();

@@ -11,7 +11,8 @@ project as your existing Odoo importer.
 | `Utils.gs`       | Sheet helpers, header-mapped read/write, metadata, lock, json. |
 | `Products.gs`    | `getProducts` — reads the `Products` sheet by header name. |
 | `Catalogues.gs`  | List / load / save / delete / duplicate. |
-| `Odoo.gs`        | `refreshProductsFromOdoo` — wraps your existing import function. |
+| `Odoo.gs`        | `refreshProductsFromOdoo` — wraps the import function. |
+| `OdooImport.gs`  | The actual TKP Odoo importer (`populateProductsFromKosherPlace`). Reads Odoo creds from the `config` tab (B1:B4) and ignore patterns from `B9:B20`. |
 
 ## One-time setup
 
@@ -21,7 +22,8 @@ project as your existing Odoo importer.
    replace it with the version in this folder.
 4. **Project settings → Script properties** — add:
    - `API_TOKEN` — long random string. Also goes into the SPA's `.env.local`.
-   - `ODOO_IMPORT_FN` — name of your existing function, e.g. `importProductsFromOdoo`.
+   - `ODOO_IMPORT_FN` *(optional)* — defaults to `populateProductsFromKosherPlace`,
+     which is what `OdooImport.gs` exports. Override only if you renamed it.
    - `SPREADSHEET_ID` *(optional)* — only needed if the script isn't bound to
      the right spreadsheet.
 5. Run `setup()` once from the editor. This creates the `Catalogues`,
