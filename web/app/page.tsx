@@ -1,0 +1,261 @@
+'use client';
+import { useMemo, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Folder, Tag } from 'lucide-react';
+
+import { api } from '@/lib/api';
+import { useCatalogue, visibleItems } from '@/lib/store';
+import {
+  buildIndex,
+  productsByCategory,
+  productsByTag,
+  searchProducts
+} from '@/lib/search';
+import { exportToXlsx } from '@/lib/export-xlsx';
+import { exportToPdf } from '@/lib/export-pdf';
+
+import { Header } from '@/components/Header';
+import { SearchBar } from '@/components/SearchBar';
+import { ProductGrid } from '@/components/ProductGrid';
+import { CataloguePanel } from '@/components/CataloguePanel';
+import { CatalogueToolbar } from '@/components/CatalogueToolbar';
+import { SaveCatalogueDialog } from '@/components/SaveCatalogueDialog';
+import { LoadCatalogueDialog } from '@/components/LoadCatalogueDialog';
+import { Spinner } from '@/components/ui/Spinner';
+import { Button } from '@/components/ui/Button';
+import { toast } from '@/components/ui/Toast';
+import type { CatalogueSummary } from '@/lib/types';
+
+export default function Page() {
+  const qc = useQueryClient();
+
+  const productsQuery = useQuery({
+    queryKey: ['products'],
+    queryFn: () => api.getProducts()
+  });
+
+  const products = productsQuery.data?.products ?? [];
+  const lastSyncedAt = productsQuery.data?.lastSyncedAt ?? null;
+
+  // Build the search index once per fetch — not on every keystroke.
+  const index = useMemo(() => buildIndex(products), [products]);
+  const productByKey = useMemo(() => {
+    const m = new Map<string, typeof products[number]>();
+    for (const p of products) m.set(p.internalReference, p);
+    return m;
+  }, [products]);
+
+  const [query, setQuery]       = useState('');
+  const [category, setCategory] = useState('');
+  const [tag, setTag]           = useState('');
+
+  const results = useMemo(
+    () => searchProducts(index, { query, category, tag }),
+    [index, query, category, tag]
+  );
+
+  // Catalogue state
+  const items        = useCatalogue(visibleItems);
+  const itemKeys     = useMemo(() => new Set(items.map((i) => i.productKey)), [items]);
+  const addProduct   = useCatalogue((s) => s.addProduct);
+  const addMany      = useCatalogue((s) => s.addManyProducts);
+  const addSource    = useCatalogue((s) => s.addSource);
+  const clear        = useCatalogue((s) => s.clear);
+  const setSavedId   = useCatalogue((s) => s.setSavedId);
+  const loadFromSrv  = useCatalogue((s) => s.loadFromServer);
+  const cs           = useCatalogue.getState;
+
+  // Save / Load dialogs
+  const [showSave, setShowSave] = useState(false);
+  const [showLoad, setShowLoad] = useState(false);
+
+  const cataloguesQuery = useQuery({
+    queryKey: ['catalogues'],
+    queryFn: () => api.listCatalogues(),
+    enabled: showLoad
+  });
+
+  const saveMut = useMutation({
+    mutationFn: async (newName: string) => {
+      const s = cs();
+      return api.saveCatalogue({
+        catalogue: {
+          catalogueId:            s.catalogueId || undefined,
+          catalogueName:          newName || s.catalogueName,
+          notes:                  s.notes,
+          defaultDiscountPercent: s.defaultDiscountPercent,
+          showDiscountColumn:     s.showDiscountColumn,
+          exportMode:             s.exportMode,
+          columnsVisibility:      s.columnsVisibility
+        },
+        items:   s.items,        // includes manuallyRemoved flags so removals stick
+        sources: s.sources
+      });
+    },
+    onSuccess: (data) => {
+      setSavedId(data.catalogueId);
+      setShowSave(false);
+      toast.success('Catalogue saved');
+      qc.invalidateQueries({ queryKey: ['catalogues'] });
+    },
+    onError: (e: Error) => toast.error(e.message)
+  });
+
+  const loadMut = useMutation({
+    mutationFn: (id: string) => api.loadCatalogue(id),
+    onSuccess: (resp) => {
+      loadFromSrv(resp.catalogue, resp.items, resp.sources);
+      setShowLoad(false);
+      toast.success(`Loaded "${resp.catalogue.catalogueName}"`);
+    },
+    onError: (e: Error) => toast.error(e.message)
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => api.deleteCatalogue(id),
+    onSuccess: () => {
+      toast.success('Deleted');
+      qc.invalidateQueries({ queryKey: ['catalogues'] });
+    },
+    onError: (e: Error) => toast.error(e.message)
+  });
+
+  const duplicateMut = useMutation({
+    mutationFn: (id: string) => api.duplicateCatalogue(id),
+    onSuccess: () => {
+      toast.success('Duplicated');
+      qc.invalidateQueries({ queryKey: ['catalogues'] });
+    },
+    onError: (e: Error) => toast.error(e.message)
+  });
+
+  // Bulk-add handlers
+  function addByCategory() {
+    if (!category) return;
+    const keys = productsByCategory(index, category).map((p) => p.internalReference);
+    addMany(keys, 'category');
+    addSource('category', category);
+    toast.info(`Added ${keys.length} from ${category}`);
+  }
+  function addByTag() {
+    if (!tag) return;
+    const keys = productsByTag(index, tag).map((p) => p.internalReference);
+    addMany(keys, 'tag');
+    addSource('tag', tag);
+    toast.info(`Added ${keys.length} tagged ${tag}`);
+  }
+
+  function doExportXlsx() {
+    const s = cs();
+    exportToXlsx({
+      catalogueName: s.catalogueName,
+      items: visibleItems(s),
+      productByKey,
+      defaultDiscountPercent: s.defaultDiscountPercent,
+      showDiscountColumn: s.showDiscountColumn,
+      columns: s.columnsVisibility,
+      exportMode: s.exportMode
+    });
+  }
+  function doExportPdf() {
+    const s = cs();
+    exportToPdf({
+      catalogueName: s.catalogueName,
+      notes: s.notes,
+      items: visibleItems(s),
+      productByKey,
+      defaultDiscountPercent: s.defaultDiscountPercent,
+      showDiscountColumn: s.showDiscountColumn,
+      columns: s.columnsVisibility,
+      exportMode: s.exportMode
+    });
+  }
+
+  return (
+    <>
+      <Header lastSyncedAt={lastSyncedAt} productCount={products.length} />
+      <main className="mx-auto max-w-screen-2xl px-4 py-4">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_420px]">
+          {/* Left: search + grid */}
+          <section className="space-y-3">
+            <SearchBar
+              query={query}
+              category={category}
+              tag={tag}
+              categories={index.categories}
+              tags={index.tags}
+              onQuery={setQuery}
+              onCategory={setCategory}
+              onTag={setTag}
+              resultCount={results.length}
+            />
+
+            {(category || tag) ? (
+              <div className="flex flex-wrap gap-2">
+                {category ? (
+                  <Button size="sm" onClick={addByCategory}>
+                    <Folder size={14} /> Add all {results.length} in “{category}”
+                  </Button>
+                ) : null}
+                {tag ? (
+                  <Button size="sm" onClick={addByTag}>
+                    <Tag size={14} /> Add all {results.length} tagged “{tag}”
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
+
+            {productsQuery.isLoading ? (
+              <div className="flex items-center gap-2 text-sm text-muted">
+                <Spinner /> Loading products from Google Sheets…
+              </div>
+            ) : productsQuery.isError ? (
+              <div className="rounded border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                {(productsQuery.error as Error).message}
+              </div>
+            ) : (
+              <ProductGrid
+                products={results}
+                inCatalogueKeys={itemKeys}
+                onAdd={(k) => addProduct(k, 'search')}
+              />
+            )}
+          </section>
+
+          {/* Right: catalogue */}
+          <aside className="space-y-3 lg:sticky lg:top-[68px] lg:self-start">
+            <CatalogueToolbar
+              itemCount={items.length}
+              onClear={() => { if (confirm('Clear the current catalogue?')) clear(); }}
+              onSave={() => setShowSave(true)}
+              onLoad={() => setShowLoad(true)}
+              onExportXlsx={doExportXlsx}
+              onExportPdf={doExportPdf}
+            />
+            <div className="max-h-[calc(100vh-260px)] overflow-y-auto pr-1">
+              <CataloguePanel productByKey={productByKey} />
+            </div>
+          </aside>
+        </div>
+      </main>
+
+      <SaveCatalogueDialog
+        open={showSave}
+        initialName={cs().catalogueName}
+        saving={saveMut.isPending}
+        onClose={() => setShowSave(false)}
+        onConfirm={(name) => saveMut.mutate(name)}
+      />
+
+      <LoadCatalogueDialog
+        open={showLoad}
+        loading={cataloguesQuery.isLoading}
+        catalogues={(cataloguesQuery.data?.catalogues || []) as CatalogueSummary[]}
+        onClose={() => setShowLoad(false)}
+        onLoad={(id) => loadMut.mutate(id)}
+        onDuplicate={(id) => duplicateMut.mutate(id)}
+        onDelete={(id) => deleteMut.mutate(id)}
+      />
+    </>
+  );
+}
