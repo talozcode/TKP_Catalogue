@@ -1,8 +1,7 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Folder, Tag, ListChecks, Eye } from 'lucide-react';
-import clsx from 'clsx';
+import { Folder, Tag } from 'lucide-react';
 
 import { api } from '@/lib/api';
 import { useCatalogue, visibleItems } from '@/lib/store';
@@ -15,21 +14,19 @@ import {
 } from '@/lib/search';
 import { exportToXlsx } from '@/lib/export-xlsx';
 import { exportToPdf } from '@/lib/export-pdf';
+import { displayCatalogueName } from '@/lib/catalogue-name';
 
 import { Header } from '@/components/Header';
 import { SearchBar } from '@/components/SearchBar';
 import { ProductGrid } from '@/components/ProductGrid';
-import { CataloguePanel } from '@/components/CataloguePanel';
-import { CataloguePreview } from '@/components/CataloguePreview';
-import { CatalogueToolbar } from '@/components/CatalogueToolbar';
+import { CataloguePane, PaneTab } from '@/components/CataloguePane';
+import { Drawer } from '@/components/ui/Drawer';
 import { SaveCatalogueDialog } from '@/components/SaveCatalogueDialog';
 import { LoadCatalogueDialog } from '@/components/LoadCatalogueDialog';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { toast } from '@/components/ui/Toast';
 import type { CatalogueSummary } from '@/lib/types';
-
-type PaneTab = 'build' | 'preview';
 
 export default function Page() {
   const qc = useQueryClient();
@@ -81,6 +78,17 @@ export default function Page() {
   const [showSave, setShowSave] = useState(false);
   const [showLoad, setShowLoad] = useState(false);
   const [tab, setTab] = useState<PaneTab>('build');
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Auto-open the drawer the first time the user adds something — gives instant
+  // feedback that the item landed in the catalogue.
+  const [hasAutoOpened, setHasAutoOpened] = useState(false);
+  useEffect(() => {
+    if (!hasAutoOpened && items.length === 1) {
+      setDrawerOpen(true);
+      setHasAutoOpened(true);
+    }
+  }, [items.length, hasAutoOpened]);
 
   const cataloguesQuery = useQuery({
     queryKey: ['catalogues'],
@@ -120,6 +128,7 @@ export default function Page() {
     onSuccess: (resp) => {
       loadFromSrv(resp.catalogue, resp.items, resp.sources);
       setShowLoad(false);
+      setDrawerOpen(true);
       toast.success(`Loaded "${resp.catalogue.catalogueName}"`);
     },
     onError: (e: Error) => toast.error(e.message)
@@ -194,111 +203,90 @@ export default function Page() {
 
   return (
     <>
-      <Header lastSyncedAt={lastSyncedAt} productCount={products.length} />
+      <Header
+        lastSyncedAt={lastSyncedAt}
+        productCount={products.length}
+        catalogueCount={items.length}
+        onOpenCatalogue={() => setDrawerOpen(true)}
+      />
       <main className="mx-auto max-w-screen-2xl px-4 py-5 md:px-6">
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_460px]">
-          {/* Left: search + grid */}
-          <section className="space-y-3">
-            <SearchBar
-              query={query}
-              category={category}
-              tag={tag}
-              categories={index.categories}
-              tags={index.tags}
-              onlyNew={onlyNew}
-              newCount={newCount}
-              onQuery={setQuery}
-              onCategory={setCategory}
-              onTag={setTag}
-              onOnlyNew={setOnlyNew}
-              resultCount={results.length}
-            />
+        <section className="space-y-3">
+          <SearchBar
+            query={query}
+            category={category}
+            tag={tag}
+            categories={index.categories}
+            tags={index.tags}
+            onlyNew={onlyNew}
+            newCount={newCount}
+            onQuery={setQuery}
+            onCategory={setCategory}
+            onTag={setTag}
+            onOnlyNew={setOnlyNew}
+            resultCount={results.length}
+          />
 
-            {(category || tag) ? (
-              <div className="flex flex-wrap gap-2">
-                {category ? (
-                  <Button size="sm" variant="primary" onClick={addByCategory}>
-                    <Folder size={14} /> Add all {results.length} in “{category}”
-                  </Button>
-                ) : null}
-                {tag ? (
-                  <Button size="sm" variant="primary" onClick={addByTag}>
-                    <Tag size={14} /> Add all {results.length} tagged “{tag}”
-                  </Button>
-                ) : null}
-              </div>
-            ) : null}
-
-            {productsQuery.isLoading ? (
-              <div className="flex items-center gap-2 text-sm text-muted">
-                <Spinner /> Loading products from Google Sheets…
-              </div>
-            ) : productsQuery.isError ? (
-              <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                {(productsQuery.error as Error).message}
-              </div>
-            ) : (
-              <ProductGrid
-                products={results}
-                inCatalogueKeys={itemKeys}
-                onAdd={(k) => addProduct(k, 'search')}
-              />
-            )}
-          </section>
-
-          {/* Right: catalogue */}
-          <aside className="space-y-3 lg:sticky lg:top-[80px] lg:self-start">
-            <CatalogueToolbar
-              itemCount={items.length}
-              onClear={() => {
-                if (confirm('Clear the current catalogue?')) clear();
-              }}
-              onSave={() => setShowSave(true)}
-              onLoad={() => setShowLoad(true)}
-              onExportXlsx={doExportXlsx}
-              onExportPdf={doExportPdf}
-            />
-
-            {/* Build / Preview tabs */}
-            <div className="inline-flex rounded-xl border border-line bg-white p-1 shadow-card">
-              <TabButton active={tab === 'build'} onClick={() => setTab('build')}>
-                <ListChecks size={14} /> Build ({items.length})
-              </TabButton>
-              <TabButton
-                active={tab === 'preview'}
-                onClick={() => setTab('preview')}
-              >
-                <Eye size={14} /> Preview
-              </TabButton>
+          {(category || tag) ? (
+            <div className="flex flex-wrap gap-2">
+              {category ? (
+                <Button size="sm" variant="primary" onClick={addByCategory}>
+                  <Folder size={14} /> Add all {results.length} in “{category}”
+                </Button>
+              ) : null}
+              {tag ? (
+                <Button size="sm" variant="primary" onClick={addByTag}>
+                  <Tag size={14} /> Add all {results.length} tagged “{tag}”
+                </Button>
+              ) : null}
             </div>
+          ) : null}
 
-            <div
-              className={clsx(
-                'scrollbar-thin pr-1',
-                tab === 'build'
-                  ? 'max-h-[calc(100vh-310px)] overflow-y-auto'
-                  : 'max-h-[calc(100vh-310px)] overflow-auto'
-              )}
-            >
-              {tab === 'build' ? (
-                <CataloguePanel productByKey={productByKey} />
-              ) : (
-                <CataloguePreview
-                  catalogueName={catalogueName}
-                  notes={notes}
-                  items={items}
-                  productByKey={productByKey}
-                  defaultDiscountPercent={discountPct}
-                  showDiscountColumn={showDiscount}
-                  columns={columnsVisibility}
-                  columnsOrder={columnsOrder}
-                  exportMode={exportMode}
-                />
-              )}
+          {productsQuery.isLoading ? (
+            <div className="flex items-center gap-2 text-sm text-muted">
+              <Spinner /> Loading products from Google Sheets…
             </div>
-          </aside>
-        </div>
+          ) : productsQuery.isError ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              {(productsQuery.error as Error).message}
+            </div>
+          ) : (
+            <ProductGrid
+              products={results}
+              inCatalogueKeys={itemKeys}
+              onAdd={(k) => addProduct(k, 'search')}
+            />
+          )}
+        </section>
       </main>
+
+      <Drawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        width="max-w-xl"
+        title={displayCatalogueName(catalogueName)}
+        subtitle={`${items.length} item${items.length === 1 ? '' : 's'} · ${exportMode}`}
+      >
+        <CataloguePane
+          tab={tab}
+          onTabChange={setTab}
+          items={items}
+          productByKey={productByKey}
+          catalogueName={catalogueName}
+          notes={notes}
+          defaultDiscountPercent={discountPct}
+          showDiscountColumn={showDiscount}
+          columnsVisibility={columnsVisibility}
+          columnsOrder={columnsOrder}
+          exportMode={exportMode}
+          onClear={() => {
+            if (confirm('Clear the current catalogue?')) clear();
+          }}
+          onSave={() => setShowSave(true)}
+          onLoad={() => setShowLoad(true)}
+          onExportXlsx={doExportXlsx}
+          onExportPdf={doExportPdf}
+        />
+      </Drawer>
 
       <SaveCatalogueDialog
         open={showSave}
@@ -318,29 +306,5 @@ export default function Page() {
         onDelete={(id) => deleteMut.mutate(id)}
       />
     </>
-  );
-}
-
-function TabButton({
-  active,
-  onClick,
-  children
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={clsx(
-        'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition',
-        active
-          ? 'bg-brand text-white shadow-sm'
-          : 'text-ink/70 hover:bg-brandSoft hover:text-brand'
-      )}
-    >
-      {children}
-    </button>
   );
 }
