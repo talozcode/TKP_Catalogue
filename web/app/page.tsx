@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Folder, Tag } from 'lucide-react';
 
@@ -81,16 +81,6 @@ export default function Page() {
   const [showLoad, setShowLoad] = useState(false);
   const [tab, setTab] = useState<PaneTab>('build');
   const [drawerOpen, setDrawerOpen] = useState(false);
-
-  // Auto-open the drawer the first time the user adds something — gives instant
-  // feedback that the item landed in the catalogue.
-  const [hasAutoOpened, setHasAutoOpened] = useState(false);
-  useEffect(() => {
-    if (!hasAutoOpened && items.length === 1) {
-      setDrawerOpen(true);
-      setHasAutoOpened(true);
-    }
-  }, [items.length, hasAutoOpened]);
 
   const cataloguesQuery = useQuery({
     queryKey: ['catalogues'],
