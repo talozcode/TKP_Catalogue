@@ -7,7 +7,8 @@ import {
   FileText,
   SlidersHorizontal,
   Percent,
-  Sparkles
+  Sparkles,
+  CalendarDays
 } from 'lucide-react';
 import { useState } from 'react';
 import { useCatalogue, visibleItems } from '@/lib/store';
@@ -15,7 +16,7 @@ import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { ColumnsDialog } from './ColumnsDialog';
 import type { ColumnKey, ColumnsVisibility, ExportMode } from '@/lib/types';
-import { displayCatalogueName, isUnnamed } from '@/lib/catalogue-name';
+import { displayCatalogueName, isUnnamed, prettyDate } from '@/lib/catalogue-name';
 
 type Props = {
   onClear: () => void;
@@ -36,6 +37,7 @@ export function CatalogueToolbar({
 }: Props) {
   const name           = useCatalogue((s) => s.catalogueName);
   const notes          = useCatalogue((s) => s.notes);
+  const titleDate      = useCatalogue((s) => s.titleDate);
   const discountPct    = useCatalogue((s) => s.defaultDiscountPercent);
   const showDiscount   = useCatalogue((s) => s.showDiscountColumn);
   const exportMode     = useCatalogue((s) => s.exportMode);
@@ -49,6 +51,8 @@ export function CatalogueToolbar({
 
   const [showColumns, setShowColumns] = useState(false);
   const unnamed = isUnnamed(name);
+  const dateOn = titleDate.length > 0;
+  const previewTitle = displayCatalogueName(name, titleDate);
 
   return (
     <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-card">
@@ -68,11 +72,36 @@ export function CatalogueToolbar({
           placeholder="Optional name (used when saving and exporting)"
           className="h-10 border-transparent bg-white/90 text-base font-semibold focus:bg-white"
         />
-        {unnamed ? (
+
+        <div className="mt-2 flex flex-col gap-1.5 sm:flex-row sm:items-center">
+          <label className="inline-flex cursor-pointer items-center gap-1.5 text-[11px] text-muted">
+            <input
+              type="checkbox"
+              checked={dateOn}
+              onChange={(e) =>
+                setMeta({ titleDate: e.target.checked ? prettyDate() : '' })
+              }
+              className="h-3.5 w-3.5 accent-brand"
+            />
+            <CalendarDays size={11} className="text-gold" />
+            Date in title
+          </label>
+          {dateOn ? (
+            <input
+              type="text"
+              value={titleDate}
+              onChange={(e) => setMeta({ titleDate: e.target.value })}
+              placeholder="e.g. April 2026"
+              className="h-7 flex-1 rounded-md border border-line bg-white/90 px-2 text-[12px] text-ink placeholder:text-muted focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+            />
+          ) : null}
+        </div>
+
+        {unnamed && !dateOn ? (
           <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-muted">
             <Sparkles size={11} className="text-gold" />
             Will export as{' '}
-            <span className="font-medium text-ink">{displayCatalogueName('')}</span>
+            <span className="font-medium text-ink">{previewTitle}</span>
           </div>
         ) : null}
       </section>

@@ -18,6 +18,7 @@ type CatalogueState = {
   catalogueId: string | null;
   catalogueName: string;
   notes: string;
+  titleDate: string;
   defaultDiscountPercent: number;
   showDiscountColumn: boolean;
   exportMode: ExportMode;
@@ -27,7 +28,7 @@ type CatalogueState = {
   sources: CatalogueSource[];
 
   // mutations
-  setMeta: (m: Partial<Pick<Catalogue, 'catalogueName' | 'notes' | 'defaultDiscountPercent' | 'showDiscountColumn' | 'exportMode' | 'columnsVisibility' | 'columnsOrder'>>) => void;
+  setMeta: (m: Partial<Pick<Catalogue, 'catalogueName' | 'notes' | 'titleDate' | 'defaultDiscountPercent' | 'showDiscountColumn' | 'exportMode' | 'columnsVisibility' | 'columnsOrder'>>) => void;
   addProduct: (productKey: string, source: AddedBySource) => void;
   addManyProducts: (keys: string[], source: AddedBySource) => void;
   removeProduct: (productKey: string) => void;
@@ -65,6 +66,7 @@ function emptyState() {
     catalogueId: null as string | null,
     catalogueName: '',
     notes: '',
+    titleDate: '',
     defaultDiscountPercent: 0,
     showDiscountColumn: false,
     exportMode: 'customer' as ExportMode,
@@ -205,6 +207,7 @@ export const useCatalogue = create<CatalogueState>()(
           catalogueId: catalogue.catalogueId,
           catalogueName: catalogue.catalogueName,
           notes: catalogue.notes,
+          titleDate: catalogue.titleDate || '',
           defaultDiscountPercent: catalogue.defaultDiscountPercent,
           showDiscountColumn: catalogue.showDiscountColumn,
           exportMode: catalogue.exportMode,
@@ -224,6 +227,7 @@ export const useCatalogue = create<CatalogueState>()(
       partialize: (s) => ({
         catalogueName: s.catalogueName,
         notes: s.notes,
+        titleDate: s.titleDate,
         defaultDiscountPercent: s.defaultDiscountPercent,
         showDiscountColumn: s.showDiscountColumn,
         exportMode: s.exportMode,

@@ -22,6 +22,7 @@ const LINE   = [234, 227, 223] as const;
 
 type ExportArgs = {
   catalogueName: string;
+  titleDate: string;
   notes: string;
   items: CatalogueItem[];
   productByKey: Map<string, Product>;
@@ -74,7 +75,7 @@ export async function exportToPdf(args: ExportArgs) {
     exportMode: args.exportMode,
     order: args.columnsOrder
   });
-  const docName = displayCatalogueName(args.catalogueName);
+  const docName = displayCatalogueName(args.catalogueName, args.titleDate);
   const includeImages = cols.some((c) => c.id === 'image');
 
   const imageMap = new Map<string, ImageData | null>();
@@ -250,20 +251,18 @@ function drawDocHeader(
   doc.setTextColor(BRAND[0], BRAND[1], BRAND[2]);
   doc.text(docName, titleX, top + 22);
 
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
-  doc.setTextColor(GOLD[0], GOLD[1], GOLD[2]);
-  const meta = [
-    `${args.items.length} items`,
-    `${args.exportMode} mode`,
-    args.showDiscountColumn && args.defaultDiscountPercent > 0
-      ? `${args.defaultDiscountPercent}% discount`
-      : null,
-    new Date().toLocaleDateString()
-  ].filter(Boolean) as string[];
-  doc.text(meta.join('  ·  ').toUpperCase(), titleX, top + 36);
-
-  let bottom = Math.max(logoBottom, top + 42);
+  let bottom = Math.max(logoBottom, top + 30);
+  if (args.showDiscountColumn && args.defaultDiscountPercent > 0) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(GOLD[0], GOLD[1], GOLD[2]);
+    doc.text(
+      `${args.defaultDiscountPercent}% DISCOUNT`,
+      titleX,
+      top + 36
+    );
+    bottom = Math.max(bottom, top + 42);
+  }
 
   if (args.notes) {
     doc.setFont('helvetica', 'normal');

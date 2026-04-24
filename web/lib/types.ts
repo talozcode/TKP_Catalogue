@@ -75,6 +75,7 @@ export type Catalogue = {
   catalogueId: string;
   catalogueName: string;
   notes: string;
+  titleDate: string;
   defaultDiscountPercent: number;
   showDiscountColumn: boolean;
   exportMode: ExportMode;

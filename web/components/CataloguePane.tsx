@@ -21,6 +21,7 @@ type Props = {
   items: CatalogueItem[];
   productByKey: Map<string, Product>;
   catalogueName: string;
+  titleDate: string;
   notes: string;
   defaultDiscountPercent: number;
   showDiscountColumn: boolean;
@@ -40,6 +41,7 @@ export function CataloguePane({
   items,
   productByKey,
   catalogueName,
+  titleDate,
   notes,
   defaultDiscountPercent,
   showDiscountColumn,
@@ -78,6 +80,7 @@ export function CataloguePane({
         ) : (
           <CataloguePreview
             catalogueName={catalogueName}
+            titleDate={titleDate}
             notes={notes}
             items={items}
             productByKey={productByKey}

@@ -8,7 +8,7 @@ function isoDate(d: Date = new Date()): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-function prettyDate(d: Date = new Date()): string {
+export function prettyDate(d: Date = new Date()): string {
   return d.toLocaleDateString(undefined, {
     year: 'numeric',
     month: 'long',
@@ -16,11 +16,17 @@ function prettyDate(d: Date = new Date()): string {
   });
 }
 
-/** Display name shown in the header strip and document preview. */
-export function displayCatalogueName(name: string): string {
+/**
+ * Display name shown in the header strip and document preview. The date
+ * suffix is optional and free-form — pass an empty string to omit it.
+ */
+export function displayCatalogueName(name: string, date?: string): string {
   const t = name.trim();
+  const d = (date || '').trim();
+  if (t && d) return `${t} · ${d}`;
   if (t) return t;
-  return `${BRAND_NAME} · ${prettyDate()}`;
+  if (d) return `${BRAND_NAME} · ${d}`;
+  return BRAND_NAME;
 }
 
 /** Filesystem-safe name used for downloaded XLSX / PDF. */

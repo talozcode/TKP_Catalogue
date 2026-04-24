@@ -69,6 +69,7 @@ export default function Page() {
   const cs                    = useCatalogue.getState;
   const catalogueName         = useCatalogue((s) => s.catalogueName);
   const notes                 = useCatalogue((s) => s.notes);
+  const titleDate             = useCatalogue((s) => s.titleDate);
   const discountPct           = useCatalogue((s) => s.defaultDiscountPercent);
   const showDiscount          = useCatalogue((s) => s.showDiscountColumn);
   const exportMode            = useCatalogue((s) => s.exportMode);
@@ -104,6 +105,7 @@ export default function Page() {
           catalogueId: s.catalogueId || undefined,
           catalogueName: newName || s.catalogueName,
           notes: s.notes,
+          titleDate: s.titleDate,
           defaultDiscountPercent: s.defaultDiscountPercent,
           showDiscountColumn: s.showDiscountColumn,
           exportMode: s.exportMode,
@@ -186,6 +188,7 @@ export default function Page() {
     try {
       await exportToPdf({
         catalogueName: s.catalogueName,
+        titleDate: s.titleDate,
         notes: s.notes,
         items: visibleItems(s),
         productByKey,
@@ -263,8 +266,7 @@ export default function Page() {
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         width="max-w-xl"
-        title={displayCatalogueName(catalogueName)}
-        subtitle={`${items.length} item${items.length === 1 ? '' : 's'} · ${exportMode}`}
+        title={displayCatalogueName(catalogueName, titleDate)}
       >
         <CataloguePane
           tab={tab}
@@ -272,6 +274,7 @@ export default function Page() {
           items={items}
           productByKey={productByKey}
           catalogueName={catalogueName}
+          titleDate={titleDate}
           notes={notes}
           defaultDiscountPercent={discountPct}
           showDiscountColumn={showDiscount}

@@ -7,6 +7,7 @@ import { displayCatalogueName } from '@/lib/catalogue-name';
 
 type Props = {
   catalogueName: string;
+  titleDate: string;
   notes: string;
   items: CatalogueItem[];
   productByKey: Map<string, Product>;
@@ -19,6 +20,7 @@ type Props = {
 
 export function CataloguePreview({
   catalogueName,
+  titleDate,
   notes,
   items,
   productByKey,
@@ -51,19 +53,18 @@ export function CataloguePreview({
       {/* Mock document header */}
       <div className="border-b-4 border-brand bg-gradient-to-r from-brandSoft/40 to-goldSoft/30 px-5 py-4">
         <div className="font-serif text-xl font-semibold text-brand">
-          {displayCatalogueName(catalogueName)}
+          {displayCatalogueName(catalogueName, titleDate)}
         </div>
         {notes ? (
           <div className="mt-1 max-w-2xl text-sm leading-snug text-ink/70">
             {notes}
           </div>
         ) : null}
-        <div className="mt-2 text-[11px] uppercase tracking-wider text-gold">
-          {items.length} items · {exportMode} mode
-          {showDiscountColumn && defaultDiscountPercent > 0
-            ? ` · ${defaultDiscountPercent}% discount`
-            : ''}
-        </div>
+        {showDiscountColumn && defaultDiscountPercent > 0 ? (
+          <div className="mt-2 text-[11px] uppercase tracking-wider text-gold">
+            {defaultDiscountPercent}% discount
+          </div>
+        ) : null}
       </div>
 
       <div className="scrollbar-thin overflow-x-auto">
