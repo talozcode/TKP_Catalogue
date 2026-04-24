@@ -27,6 +27,42 @@ import type {
   Product
 } from './types';
 
+const CATALOGUE_SCHEMA: Array<[string, string[]]> = [
+  [
+    SHEETS.CATALOGUES,
+    [
+      'catalogue_id',
+      'catalogue_name',
+      'notes',
+      'default_discount_percent',
+      'show_discount_column',
+      'export_mode',
+      'columns_visibility_json',
+      'created_at',
+      'updated_at'
+    ]
+  ],
+  [
+    SHEETS.ITEMS,
+    [
+      'catalogue_id',
+      'product_key',
+      'selected_order',
+      'excluded_from_discount',
+      'custom_note',
+      'manually_removed',
+      'added_by_source'
+    ]
+  ],
+  [SHEETS.SOURCES, ['catalogue_id', 'source_type', 'source_value']]
+];
+
+async function ensureCatalogueSheets(): Promise<void> {
+  for (const [name, headers] of CATALOGUE_SCHEMA) {
+    await ensureSheet(name, headers);
+  }
+}
+
 function mapProduct(r: Record<string, unknown>): Product {
   let dateCreated = r['Date Created'];
   if (dateCreated instanceof Date) dateCreated = dateCreated.toISOString();
@@ -161,6 +197,11 @@ export async function saveCatalogue(
   const sources = input.sources || [];
   if (!c.catalogueName) throw new Error('catalogueName required');
 
+  // Defensive: make sure the catalogue tabs exist before we write. If the user
+  // never ran /api/setup (or recreated the spreadsheet), saving would fail
+  // silently with a 'sheet not found' error otherwise.
+  await ensureCatalogueSheets();
+
   const existing = await readAll(SHEETS.CATALOGUES);
   const now = nowIso();
   const id = c.catalogueId;
@@ -256,33 +297,7 @@ export async function duplicateCatalogue(
 export async function runSetup(): Promise<{ created: string[] }> {
   const created: string[] = [];
   const tabs: Array<[string, string[]]> = [
-    [
-      SHEETS.CATALOGUES,
-      [
-        'catalogue_id',
-        'catalogue_name',
-        'notes',
-        'default_discount_percent',
-        'show_discount_column',
-        'export_mode',
-        'columns_visibility_json',
-        'created_at',
-        'updated_at'
-      ]
-    ],
-    [
-      SHEETS.ITEMS,
-      [
-        'catalogue_id',
-        'product_key',
-        'selected_order',
-        'excluded_from_discount',
-        'custom_note',
-        'manually_removed',
-        'added_by_source'
-      ]
-    ],
-    [SHEETS.SOURCES, ['catalogue_id', 'source_type', 'source_value']],
+    ...CATALOGUE_SCHEMA,
     [SHEETS.METADATA, ['key', 'value']]
   ];
   for (const [name, headers] of tabs) {

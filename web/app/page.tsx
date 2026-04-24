@@ -48,12 +48,12 @@ export default function Page() {
 
   const [query, setQuery]       = useState('');
   const [category, setCategory] = useState('');
-  const [tag, setTag]           = useState('');
+  const [tags, setTags]         = useState<string[]>([]);
   const [onlyNew, setOnlyNew]   = useState(false);
 
   const results = useMemo(
-    () => searchProducts(index, { query, category, tag, onlyNew }),
-    [index, query, category, tag, onlyNew]
+    () => searchProducts(index, { query, category, tags, onlyNew }),
+    [index, query, category, tags, onlyNew]
   );
   const newCount = useMemo(() => countNewProducts(index), [index]);
 
@@ -61,6 +61,7 @@ export default function Page() {
   const items                 = useCatalogue(visibleItems);
   const itemKeys              = useMemo(() => new Set(items.map((i) => i.productKey)), [items]);
   const addProduct            = useCatalogue((s) => s.addProduct);
+  const removeProduct         = useCatalogue((s) => s.removeProduct);
   const addMany               = useCatalogue((s) => s.addManyProducts);
   const addSource             = useCatalogue((s) => s.addSource);
   const clear                 = useCatalogue((s) => s.clear);
@@ -162,11 +163,12 @@ export default function Page() {
     toast.info(`Added ${keys.length} from ${category}`);
   }
   function addByTag() {
-    if (!tag) return;
-    const keys = productsByTag(index, tag).map((p) => p.internalReference);
+    if (tags.length !== 1) return;
+    const t = tags[0];
+    const keys = productsByTag(index, t).map((p) => p.internalReference);
     addMany(keys, 'tag');
-    addSource('tag', tag);
-    toast.info(`Added ${keys.length} tagged ${tag}`);
+    addSource('tag', t);
+    toast.info(`Added ${keys.length} tagged ${t}`);
   }
 
   function doExportXlsx() {
@@ -217,28 +219,34 @@ export default function Page() {
           <SearchBar
             query={query}
             category={category}
-            tag={tag}
+            tags={tags}
             categories={index.categories}
-            tags={index.tags}
+            allTags={index.tags}
             onlyNew={onlyNew}
             newCount={newCount}
             onQuery={setQuery}
             onCategory={setCategory}
-            onTag={setTag}
+            onTagsChange={setTags}
             onOnlyNew={setOnlyNew}
+            onClearAll={() => {
+              setQuery('');
+              setCategory('');
+              setTags([]);
+              setOnlyNew(false);
+            }}
             resultCount={results.length}
           />
 
-          {(category || tag) ? (
+          {(category || tags.length === 1) ? (
             <div className="flex flex-wrap gap-2">
               {category ? (
                 <Button size="sm" variant="primary" onClick={addByCategory}>
                   <Folder size={14} /> Add all {results.length} in “{category}”
                 </Button>
               ) : null}
-              {tag ? (
+              {tags.length === 1 ? (
                 <Button size="sm" variant="primary" onClick={addByTag}>
-                  <Tag size={14} /> Add all {results.length} tagged “{tag}”
+                  <Tag size={14} /> Add all {results.length} tagged “{tags[0]}”
                 </Button>
               ) : null}
             </div>
@@ -257,6 +265,7 @@ export default function Page() {
               products={results}
               inCatalogueKeys={itemKeys}
               onAdd={(k) => addProduct(k, 'search')}
+              onRemove={(k) => removeProduct(k)}
             />
           )}
         </section>

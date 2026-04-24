@@ -7,13 +7,14 @@ type Props = {
   products: Product[];
   inCatalogueKeys: Set<string>;
   onAdd: (key: string) => void;
+  onRemove: (key: string) => void;
 };
 
 const PAGE = 60;
 
 // Simple paged rendering — keeps the DOM light even with thousands of results.
 // (Could swap in react-virtual later if grids grow much larger.)
-export function ProductGrid({ products, inCatalogueKeys, onAdd }: Props) {
+export function ProductGrid({ products, inCatalogueKeys, onAdd, onRemove }: Props) {
   const [count, setCount] = useState(PAGE);
   const visible = products.slice(0, count);
   const hasMore = products.length > count;
@@ -35,6 +36,7 @@ export function ProductGrid({ products, inCatalogueKeys, onAdd }: Props) {
             product={p}
             inCatalogue={inCatalogueKeys.has(p.internalReference)}
             onAdd={() => onAdd(p.internalReference)}
+            onRemove={() => onRemove(p.internalReference)}
           />
         ))}
       </div>

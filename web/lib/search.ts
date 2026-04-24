@@ -39,7 +39,7 @@ export function buildIndex(products: Product[]): ProductIndex {
 export type SearchFilters = {
   query: string;
   category?: string;
-  tag?: string;
+  tags?: string[];
   onlyNew?: boolean;
 };
 
@@ -56,7 +56,9 @@ export function isNewProduct(p: Product, now: number = Date.now()): boolean {
 export function searchProducts(index: ProductIndex, filters: SearchFilters): Product[] {
   const tokens = filters.query.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const cat = filters.category?.trim().toLowerCase() || '';
-  const tag = filters.tag?.trim().toLowerCase() || '';
+  const tagFilters = (filters.tags || [])
+    .map((t) => t.trim().toLowerCase())
+    .filter(Boolean);
   const now = Date.now();
 
   const out: Product[] = [];
@@ -64,7 +66,14 @@ export function searchProducts(index: ProductIndex, filters: SearchFilters): Pro
     const p = index.products[i];
     const h = index.haystacks[i];
     if (cat && p.productCategory.toLowerCase() !== cat) continue;
-    if (tag && !p.tags.some((t) => t.toLowerCase() === tag)) continue;
+    if (tagFilters.length) {
+      const productTags = p.tags.map((t) => t.toLowerCase());
+      let allMatch = true;
+      for (const tf of tagFilters) {
+        if (!productTags.includes(tf)) { allMatch = false; break; }
+      }
+      if (!allMatch) continue;
+    }
     if (filters.onlyNew && !isNewProduct(p, now)) continue;
     let ok = true;
     for (const t of tokens) {

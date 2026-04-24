@@ -47,9 +47,7 @@ export function Header({
             </div>
             {lastSyncedAt ? (
               <div>Last sync {formatDate(lastSyncedAt)}</div>
-            ) : (
-              <div className="text-muted">Sheet not yet synced</div>
-            )}
+            ) : null}
           </div>
 
           <button

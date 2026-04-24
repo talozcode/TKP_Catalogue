@@ -1,5 +1,5 @@
 'use client';
-import { Plus, Check, ImageOff, Sparkles } from 'lucide-react';
+import { Plus, Minus, ImageOff, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import clsx from 'clsx';
 import type { Product } from '@/lib/types';
@@ -11,9 +11,10 @@ type Props = {
   product: Product;
   inCatalogue: boolean;
   onAdd: () => void;
+  onRemove: () => void;
 };
 
-export function ProductCard({ product, inCatalogue, onAdd }: Props) {
+export function ProductCard({ product, inCatalogue, onAdd, onRemove }: Props) {
   const [imgError, setImgError] = useState(false);
   const isNew = isNewProduct(product);
   return (
@@ -47,17 +48,17 @@ export function ProductCard({ product, inCatalogue, onAdd }: Props) {
           </span>
         ) : null}
         <button
-          onClick={onAdd}
+          onClick={inCatalogue ? onRemove : onAdd}
           className={clsx(
             'absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full shadow-card transition',
             inCatalogue
-              ? 'bg-brand text-white'
+              ? 'bg-brand text-white hover:bg-red-600'
               : 'bg-white text-ink hover:bg-brand hover:text-white'
           )}
-          aria-label={inCatalogue ? 'In catalogue' : 'Add to catalogue'}
-          title={inCatalogue ? 'In catalogue' : 'Add to catalogue'}
+          aria-label={inCatalogue ? 'Remove from catalogue' : 'Add to catalogue'}
+          title={inCatalogue ? 'Remove from catalogue' : 'Add to catalogue'}
         >
-          {inCatalogue ? <Check size={16} /> : <Plus size={16} />}
+          {inCatalogue ? <Minus size={16} /> : <Plus size={16} />}
         </button>
       </div>
       <div className="flex flex-1 flex-col gap-1 p-3">
