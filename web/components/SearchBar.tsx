@@ -102,7 +102,7 @@ export function SearchBar({
               : 'border-line bg-white text-muted hover:border-gold/60 hover:text-goldDeep',
             newCount === 0 && !onlyNew && 'opacity-50'
           )}
-          title={`Show only products added in the last 30 days${newCount ? ` (${newCount} available)` : ''}`}
+          title={`Show only products added in the last 7 days${newCount ? ` (${newCount} available)` : ''}`}
         >
           <Sparkles size={12} />
           New only

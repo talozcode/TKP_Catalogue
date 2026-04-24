@@ -122,9 +122,10 @@ export async function exportToPdf(args: ExportArgs) {
     if (c.align === 'right') s.halign = 'right';
     if (c.align === 'center') s.halign = 'center';
     if (c.id === 'image') {
-      s.minCellHeight = 48;
+      s.minCellHeight = 80;
       s.halign = 'center';
       s.valign = 'middle';
+      s.cellPadding = 3;
     }
     if (c.id === 'productName') s.fontStyle = 'bold';
     if (c.id === 'salesPrice' || c.id === 'finalPrice') s.fontStyle = 'bold';
@@ -178,7 +179,7 @@ export async function exportToPdf(args: ExportArgs) {
       const x = cell.x + (cell.width - w) / 2;
       const y = cell.y + (cell.height - h) / 2;
       try {
-        doc.addImage(img.dataUrl, imgFormat(img.dataUrl), x, y, w, h, undefined, 'FAST');
+        doc.addImage(img.dataUrl, imgFormat(img.dataUrl), x, y, w, h, undefined, 'NONE');
       } catch {
         // Skip silently — image format unsupported by jsPDF.
       }

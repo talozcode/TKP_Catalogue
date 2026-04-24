@@ -29,7 +29,7 @@ export type ResolvedColumn = {
 };
 
 const ALL: ResolvedColumn[] = [
-  { id: 'image',             label: 'Image',     align: 'center', pdfWidth: 56 },
+  { id: 'image',             label: 'Image',     align: 'center', pdfWidth: 84 },
   { id: 'internalReference', label: 'Ref',       align: 'left',   pdfWidth: 60 },
   { id: 'productName',       label: 'Product',   align: 'left' },
   { id: 'barcode',           label: 'Barcode',   align: 'left',   pdfWidth: 90 },

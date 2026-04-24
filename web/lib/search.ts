@@ -44,7 +44,7 @@ export type SearchFilters = {
 };
 
 /** A product is "new" if its dateCreated is within this many days. */
-export const NEW_PRODUCT_DAYS = 30;
+export const NEW_PRODUCT_DAYS = 7;
 
 export function isNewProduct(p: Product, now: number = Date.now()): boolean {
   if (!p.dateCreated) return false;
