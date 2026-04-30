@@ -28,9 +28,11 @@ export function CataloguePanel({ productByKey }: Props) {
   const sources      = useCatalogue((s) => s.sources);
   const discountPct  = useCatalogue((s) => s.defaultDiscountPercent);
   const showDiscount = useCatalogue((s) => s.showDiscountColumn);
+  const showNotes    = useCatalogue((s) => !!s.columnsVisibility.note);
 
   const remove        = useCatalogue((s) => s.removeProduct);
   const toggleExclude = useCatalogue((s) => s.toggleExclude);
+  const setNote       = useCatalogue((s) => s.setNote);
   const reorder       = useCatalogue((s) => s.reorder);
   const removeSource  = useCatalogue((s) => s.removeSource);
 
@@ -94,8 +96,11 @@ export function CataloguePanel({ productByKey }: Props) {
                   source={it.addedBySource}
                   discountPct={discountPct}
                   showDiscount={showDiscount}
+                  showNotes={showNotes}
+                  note={it.customNote}
                   onRemove={() => remove(it.productKey)}
                   onToggleExclude={() => toggleExclude(it.productKey)}
+                  onNoteChange={(v) => setNote(it.productKey, v)}
                 />
               );
             })}
@@ -115,8 +120,11 @@ type RowProps = {
   source: string;
   discountPct: number;
   showDiscount: boolean;
+  showNotes: boolean;
+  note: string;
   onRemove: () => void;
   onToggleExclude: () => void;
+  onNoteChange: (v: string) => void;
 };
 
 function SortableRow({
@@ -128,8 +136,11 @@ function SortableRow({
   source,
   discountPct,
   showDiscount,
+  showNotes,
+  note,
   onRemove,
-  onToggleExclude
+  onToggleExclude,
+  onNoteChange
 }: RowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id });
@@ -147,89 +158,103 @@ function SortableRow({
       ref={setNodeRef}
       style={style}
       className={clsx(
-        'flex items-center gap-2 rounded-xl border border-line bg-white px-2 py-2 shadow-card transition',
+        'rounded-xl border border-line bg-white px-2 py-2 shadow-card transition',
         isDragging ? 'ring-2 ring-brand/40' : 'hover:border-brand/30'
       )}
     >
-      <button
-        {...attributes}
-        {...listeners}
-        className="flex h-7 w-5 cursor-grab items-center justify-center text-line hover:text-brand active:cursor-grabbing"
-        aria-label="Drag to reorder"
-      >
-        <GripVertical size={14} />
-      </button>
+      <div className="flex items-center gap-2">
+        <button
+          {...attributes}
+          {...listeners}
+          className="flex h-7 w-5 cursor-grab items-center justify-center text-line hover:text-brand active:cursor-grabbing"
+          aria-label="Drag to reorder"
+        >
+          <GripVertical size={14} />
+        </button>
 
-      <div className="w-5 text-center text-[11px] font-semibold text-muted tabular-nums">
-        {index}
-      </div>
+        <div className="w-5 text-center text-[11px] font-semibold text-muted tabular-nums">
+          {index}
+        </div>
 
-      <div className="h-11 w-11 flex-shrink-0 overflow-hidden rounded-lg border border-line bg-bg">
-        {product?.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={product.imageUrl}
-            alt=""
-            loading="lazy"
-            className="h-full w-full object-contain"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-line">
-            <ImageOff size={14} />
-          </div>
-        )}
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-medium text-ink">
-          {product?.productName || (
-            <span className="text-muted">Missing: {productKey}</span>
+        <div className="h-11 w-11 flex-shrink-0 overflow-hidden rounded-lg border border-line bg-bg">
+          {product?.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={product.imageUrl}
+              alt=""
+              loading="lazy"
+              className="h-full w-full object-contain"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-line">
+              <ImageOff size={14} />
+            </div>
           )}
         </div>
-        <div className="flex items-center gap-1.5 text-[11px] text-muted">
-          <span className="tabular-nums">{productKey}</span>
-          {source !== 'manual' ? <Badge tone="brand">via {source}</Badge> : null}
-        </div>
-      </div>
 
-      <div className="flex flex-col items-end gap-0.5 pr-1 text-right">
-        <span className="text-sm font-semibold tabular-nums">
-          {formatMoney(product?.salesPrice ?? null)}
-        </span>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-medium text-ink">
+            {product?.productName || (
+              <span className="text-muted">Missing: {productKey}</span>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 text-[11px] text-muted">
+            <span className="tabular-nums">{productKey}</span>
+            {source !== 'manual' ? <Badge tone="brand">via {source}</Badge> : null}
+          </div>
+        </div>
+
+        <div className="flex flex-col items-end gap-0.5 pr-1 text-right">
+          <span className="text-sm font-semibold tabular-nums">
+            {formatMoney(product?.salesPrice ?? null)}
+          </span>
+          {showDiscount && discountPct > 0 ? (
+            <span
+              className={clsx(
+                'text-[11px] tabular-nums',
+                excluded ? 'text-muted line-through' : 'text-goldDeep'
+              )}
+            >
+              → {formatMoney(finalPrice)}
+            </span>
+          ) : null}
+        </div>
+
         {showDiscount && discountPct > 0 ? (
-          <span
+          <button
+            onClick={onToggleExclude}
+            title={excluded ? 'Include in discount' : 'Exclude from discount'}
             className={clsx(
-              'text-[11px] tabular-nums',
-              excluded ? 'text-muted line-through' : 'text-goldDeep'
+              'inline-flex h-7 w-7 items-center justify-center rounded',
+              excluded
+                ? 'bg-amber-100 text-amber-800'
+                : 'text-muted hover:bg-brandSoft hover:text-brand'
             )}
           >
-            → {formatMoney(finalPrice)}
-          </span>
+            <Percent size={13} />
+          </button>
         ) : null}
+
+        <button
+          onClick={onRemove}
+          className="inline-flex h-7 w-7 items-center justify-center rounded text-muted hover:bg-red-50 hover:text-red-600"
+          aria-label="Remove from catalogue"
+        >
+          <X size={14} />
+        </button>
       </div>
 
-      {showDiscount && discountPct > 0 ? (
-        <button
-          onClick={onToggleExclude}
-          title={excluded ? 'Include in discount' : 'Exclude from discount'}
-          className={clsx(
-            'inline-flex h-7 w-7 items-center justify-center rounded',
-            excluded
-              ? 'bg-amber-100 text-amber-800'
-              : 'text-muted hover:bg-brandSoft hover:text-brand'
-          )}
-        >
-          <Percent size={13} />
-        </button>
+      {showNotes ? (
+        <div className="mt-2 pl-7">
+          <textarea
+            value={note}
+            onChange={(e) => onNoteChange(e.target.value)}
+            placeholder="Note for this product…"
+            rows={1}
+            className="w-full resize-y rounded-md border border-line bg-bg/60 px-2 py-1 text-xs text-ink placeholder:text-muted focus:border-brand focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand/30"
+          />
+        </div>
       ) : null}
-
-      <button
-        onClick={onRemove}
-        className="inline-flex h-7 w-7 items-center justify-center rounded text-muted hover:bg-red-50 hover:text-red-600"
-        aria-label="Remove from catalogue"
-      >
-        <X size={14} />
-      </button>
     </li>
   );
 }
