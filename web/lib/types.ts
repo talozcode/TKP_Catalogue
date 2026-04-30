@@ -58,6 +58,7 @@ export type ColumnKey =
   | 'image'
   | 'internalReference'
   | 'productName'
+  | 'productNameHe'
   | 'barcode'
   | 'uom'
   | 'packaging'

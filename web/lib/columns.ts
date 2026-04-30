@@ -10,6 +10,7 @@ export type ColumnId =
   | 'image'
   | 'internalReference'
   | 'productName'
+  | 'productNameHe'
   | 'barcode'
   | 'uom'
   | 'packaging'
@@ -32,6 +33,7 @@ const ALL: ResolvedColumn[] = [
   { id: 'image',             label: 'Image',     align: 'center', pdfWidth: 84 },
   { id: 'internalReference', label: 'Ref',       align: 'left',   pdfWidth: 60 },
   { id: 'productName',       label: 'Product',   align: 'left' },
+  { id: 'productNameHe',     label: 'Hebrew',    align: 'right' },
   { id: 'barcode',           label: 'Barcode',   align: 'left',   pdfWidth: 90 },
   { id: 'uom',               label: 'UOM',       align: 'left',   pdfWidth: 50 },
   { id: 'packaging',         label: 'Packaging', align: 'left',   pdfWidth: 80 },
@@ -52,12 +54,6 @@ export const COLUMN_LABELS: Record<ColumnId, string> = ALL.reduce(
 );
 
 const COLUMN_BY_ID = new Map(ALL.map((c) => [c.id, c]));
-
-const HIDDEN_FROM_CUSTOMER: ColumnId[] = [
-  'internalReference',
-  'tags',
-  'wholesalePrice'
-];
 
 export function normalizeColumnOrder(order: ColumnId[] | undefined): ColumnId[] {
   const seen = new Set<ColumnId>();
@@ -80,7 +76,6 @@ export function resolveColumns(opts: {
   exportMode: ExportMode;
   order?: ColumnId[];
 }): ResolvedColumn[] {
-  const isCustomer = opts.exportMode === 'customer';
   const order = normalizeColumnOrder(opts.order);
   const out: ResolvedColumn[] = [];
   for (const id of order) {
@@ -91,7 +86,6 @@ export function resolveColumns(opts: {
     } else {
       if (!opts.columns[c.id]) continue;
     }
-    if (isCustomer && HIDDEN_FROM_CUSTOMER.includes(c.id)) continue;
     out.push(c);
   }
   return out;
@@ -110,6 +104,7 @@ export function cellText(col: ColumnId, ctx: CellContext): string {
     case 'image':             return p.imageUrl || '';
     case 'internalReference': return p.internalReference;
     case 'productName':       return p.productName;
+    case 'productNameHe':     return p.productNameHe;
     case 'barcode':           return p.barcode;
     case 'uom':               return p.uom;
     case 'packaging':         return p.packaging;

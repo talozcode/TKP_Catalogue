@@ -49,6 +49,7 @@ const DEFAULT_COLUMNS: ColumnsVisibility = {
   image: true,
   internalReference: true,
   productName: true,
+  productNameHe: false,
   barcode: false,
   uom: false,
   packaging: false,
