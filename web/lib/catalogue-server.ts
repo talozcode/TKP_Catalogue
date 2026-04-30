@@ -63,13 +63,37 @@ async function ensureCatalogueSheets(): Promise<void> {
   }
 }
 
+// Try a few plausible header names for the Hebrew product name so a sheet
+// authored with a different label (e.g. "Hebrew Name", "שם בעברית") still
+// populates the field instead of silently coming back empty.
+function pickHebrewName(r: Record<string, unknown>): string {
+  const candidates = [
+    'Product Name (Hebrew)',
+    'Product Name Hebrew',
+    'Hebrew Name',
+    'Hebrew',
+    'Name (Hebrew)',
+    'שם בעברית',
+    'שם המוצר'
+  ];
+  for (const k of candidates) {
+    const v = r[k];
+    if (v != null && String(v).trim() !== '') return String(v);
+  }
+  // Fallback: any header containing "hebrew" (case-insensitive).
+  for (const [k, v] of Object.entries(r)) {
+    if (/hebrew/i.test(k) && v != null && String(v).trim() !== '') return String(v);
+  }
+  return '';
+}
+
 function mapProduct(r: Record<string, unknown>): Product {
   let dateCreated = r['Date Created'];
   if (dateCreated instanceof Date) dateCreated = dateCreated.toISOString();
   return {
     internalReference: str(r['Internal Reference']),
     productName: str(r['Product Name']),
-    productNameHe: str(r['Product Name (Hebrew)']),
+    productNameHe: pickHebrewName(r),
     barcode: str(r['Product Barcode']),
     uom: str(r['UOM']),
     packaging: str(r['Packaging']),

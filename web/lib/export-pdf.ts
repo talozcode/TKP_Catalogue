@@ -13,6 +13,37 @@ import { displayCatalogueName, fileBaseName } from './catalogue-name';
 const LOGO_URL =
   'https://res.cloudinary.com/dakhwegyt/image/upload/v1776678465/kp-primary_4x_totp25.png';
 
+// jsPDF's built-in fonts have no Hebrew glyphs. Register Heebo (Google Fonts,
+// SIL OFL) at export time so Hebrew product names render instead of becoming
+// missing-glyph rectangles.
+const HEBREW_FONT_URL =
+  'https://cdn.jsdelivr.net/gh/google/fonts/ofl/heebo/static/Heebo-Regular.ttf';
+const HEBREW_FONT_NAME = 'Heebo';
+const HEBREW_RANGE = /[֐-׿יִ-ﭏ]/;
+
+async function fetchFontBase64(url: string): Promise<string | null> {
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) return null;
+    const buf = await resp.arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    let bin = '';
+    for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin);
+  } catch {
+    return null;
+  }
+}
+
+// jsPDF draws glyphs in the order it receives them and does not apply bidi.
+// For pure-Hebrew strings we reverse the codepoints so the right-aligned cell
+// reads correctly. Mixed Hebrew/Latin strings are uncommon for product names
+// and are left as-is.
+function reverseHebrewIfNeeded(s: string): string {
+  if (!s || !HEBREW_RANGE.test(s)) return s;
+  return Array.from(s).reverse().join('');
+}
+
 const BRAND  = [122, 31, 61] as const;
 const GOLD   = [201, 161, 78] as const;
 const INK    = [26, 15, 18] as const;
@@ -78,10 +109,16 @@ export async function exportToPdf(args: ExportArgs) {
   const docName = displayCatalogueName(args.catalogueName, args.titleDate);
   const includeImages = cols.some((c) => c.id === 'image');
 
+  const includeHebrew = cols.some((c) => c.id === 'productNameHe');
+
   const imageMap = new Map<string, ImageData | null>();
   const tasks: Promise<unknown>[] = [];
   const logoPromise = fetchImageAsData(LOGO_URL);
   tasks.push(logoPromise);
+  const hebrewFontPromise: Promise<string | null> = includeHebrew
+    ? fetchFontBase64(HEBREW_FONT_URL)
+    : Promise.resolve(null);
+  tasks.push(hebrewFontPromise);
 
   if (includeImages) {
     const seen = new Set<string>();
@@ -95,11 +132,25 @@ export async function exportToPdf(args: ExportArgs) {
   }
   await Promise.all(tasks);
   const logo = await logoPromise;
+  const hebrewFontBase64 = await hebrewFontPromise;
 
   const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const margin = 36;
+
+  let hebrewFontReady = false;
+  if (hebrewFontBase64) {
+    try {
+      doc.addFileToVFS('Heebo-Regular.ttf', hebrewFontBase64);
+      doc.addFont('Heebo-Regular.ttf', HEBREW_FONT_NAME, 'normal');
+      hebrewFontReady = true;
+    } catch {
+      // If font registration fails (jsPDF parse error etc.) fall back to the
+      // default font — Hebrew glyphs will render as boxes but the export still
+      // succeeds for the rest of the document.
+    }
+  }
 
   const headerBottom = drawDocHeader(doc, args, docName, logo, pageW, margin);
 
@@ -108,11 +159,15 @@ export async function exportToPdf(args: ExportArgs) {
     const p = args.productByKey.get(it.productKey);
     return cols.map((c) => {
       if (c.id === 'image') return '';
-      return cellText(c.id, {
+      const text = cellText(c.id, {
         product: p,
         item: it,
         defaultDiscountPercent: args.defaultDiscountPercent
       });
+      // jsPDF doesn't apply bidi — pre-reverse Hebrew so the glyphs appear in
+      // the correct visual order in a right-aligned cell.
+      if (c.id === 'productNameHe' && hebrewFontReady) return reverseHebrewIfNeeded(text);
+      return text;
     });
   });
 
@@ -130,6 +185,10 @@ export async function exportToPdf(args: ExportArgs) {
     }
     if (c.id === 'productName') s.fontStyle = 'bold';
     if (c.id === 'salesPrice' || c.id === 'finalPrice') s.fontStyle = 'bold';
+    if (c.id === 'productNameHe' && hebrewFontReady) {
+      s.font = HEBREW_FONT_NAME;
+      s.halign = 'right';
+    }
     columnStyles[idx] = s;
   });
 
