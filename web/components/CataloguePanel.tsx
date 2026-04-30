@@ -19,7 +19,6 @@ import { CSS } from '@dnd-kit/utilities';
 import type { Product } from '@/lib/types';
 import { useCatalogue, visibleItems } from '@/lib/store';
 import { applyDiscount, formatMoney } from '@/lib/format';
-import { Badge } from './ui/Badge';
 
 type Props = { productByKey: Map<string, Product> };
 
@@ -93,7 +92,6 @@ export function CataloguePanel({ productByKey }: Props) {
                   product={p}
                   productKey={it.productKey}
                   excluded={it.excludedFromDiscount}
-                  source={it.addedBySource}
                   discountPct={discountPct}
                   showDiscount={showDiscount}
                   showNotes={showNotes}
@@ -117,7 +115,6 @@ type RowProps = {
   product?: Product;
   productKey: string;
   excluded: boolean;
-  source: string;
   discountPct: number;
   showDiscount: boolean;
   showNotes: boolean;
@@ -133,7 +130,6 @@ function SortableRow({
   product,
   productKey,
   excluded,
-  source,
   discountPct,
   showDiscount,
   showNotes,
@@ -200,7 +196,6 @@ function SortableRow({
           </div>
           <div className="flex items-center gap-1.5 text-[11px] text-muted">
             <span className="tabular-nums">{productKey}</span>
-            {source !== 'manual' ? <Badge tone="brand">via {source}</Badge> : null}
           </div>
         </div>
 
