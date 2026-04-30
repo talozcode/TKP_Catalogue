@@ -194,7 +194,10 @@ export const useCatalogue = create<CatalogueState>()(
       },
 
       moveColumn: (fromIdx, toIdx) => {
-        const order = [...get().columnsOrder];
+        // Normalize first so the indices line up with what the dialog renders
+        // (otherwise a column that was added after the draft was persisted —
+        // e.g. productNameHe — sits outside the raw array and can't move).
+        const order = normalizeColumnOrder(get().columnsOrder) as ColumnKey[];
         if (fromIdx < 0 || toIdx < 0 || fromIdx >= order.length || toIdx >= order.length) return;
         const [moved] = order.splice(fromIdx, 1);
         order.splice(toIdx, 0, moved);
