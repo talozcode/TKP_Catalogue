@@ -13,12 +13,13 @@ import { displayCatalogueName, fileBaseName } from './catalogue-name';
 const LOGO_URL =
   'https://res.cloudinary.com/dakhwegyt/image/upload/v1776678465/kp-primary_4x_totp25.png';
 
-// jsPDF's built-in fonts have no Hebrew glyphs. Register Heebo (Google Fonts,
-// SIL OFL) at export time so Hebrew product names render instead of becoming
+// jsPDF's built-in fonts have no Hebrew glyphs. We bundle a Hebrew-capable
+// TTF (David Libre, Google Fonts, SIL OFL) under /public/fonts so the load
+// is same-origin — no CDN flakiness, no CORS — and register it on the doc
+// at export time so Hebrew product names render instead of becoming
 // missing-glyph rectangles.
-const HEBREW_FONT_URL =
-  'https://cdn.jsdelivr.net/gh/google/fonts/ofl/heebo/static/Heebo-Regular.ttf';
-const HEBREW_FONT_NAME = 'Heebo';
+const HEBREW_FONT_URL = '/fonts/Hebrew-Regular.ttf';
+const HEBREW_FONT_NAME = 'Hebrew';
 const HEBREW_RANGE = /[֐-׿יִ-ﭏ]/;
 
 async function fetchFontBase64(url: string): Promise<string | null> {
@@ -142,8 +143,8 @@ export async function exportToPdf(args: ExportArgs) {
   let hebrewFontReady = false;
   if (hebrewFontBase64) {
     try {
-      doc.addFileToVFS('Heebo-Regular.ttf', hebrewFontBase64);
-      doc.addFont('Heebo-Regular.ttf', HEBREW_FONT_NAME, 'normal');
+      doc.addFileToVFS('Hebrew-Regular.ttf', hebrewFontBase64);
+      doc.addFont('Hebrew-Regular.ttf', HEBREW_FONT_NAME, 'normal');
       hebrewFontReady = true;
     } catch {
       // If font registration fails (jsPDF parse error etc.) fall back to the
