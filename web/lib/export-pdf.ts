@@ -243,9 +243,12 @@ export async function exportToPdf(args: ExportArgs) {
 
         const prevR2L = doc.getR2L ? doc.getR2L() : false;
         doc.setR2L(true);
+        // In R2L mode jsPDF anchors at x and flows glyphs leftward, so x is
+        // the visual right edge of the line. Don't pass align: 'right' — that
+        // option re-centers the text in R2L mode for some jsPDF builds.
+        const anchorX = cell.x + cell.width - pad;
         for (let i = 0; i < lines.length; i++) {
-          doc.text(lines[i], cell.x + cell.width - pad, firstBaseline + i * lineHeight, {
-            align: 'right',
+          doc.text(lines[i], anchorX, firstBaseline + i * lineHeight, {
             baseline: 'alphabetic'
           });
         }
