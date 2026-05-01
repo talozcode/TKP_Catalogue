@@ -13,14 +13,12 @@ import { displayCatalogueName, fileBaseName } from './catalogue-name';
 const LOGO_URL =
   'https://res.cloudinary.com/dakhwegyt/image/upload/v1776678465/kp-primary_4x_totp25.png';
 
-// jsPDF's built-in fonts have no Hebrew glyphs. We bundle a Hebrew-capable
-// TTF (David Libre, Google Fonts, SIL OFL) under /public/fonts so the load
-// is same-origin — no CDN flakiness, no CORS — and register it on the doc
-// at export time so Hebrew product names render instead of becoming
-// missing-glyph rectangles.
+// jsPDF's built-in fonts have no Hebrew glyphs. We bundle Open Sans Hebrew
+// Regular (Google Fonts, Apache 2.0) under /public/fonts so the load is
+// same-origin — no CDN flakiness, no CORS. Hebrew cells are drawn manually
+// with jsPDF's R2L mode enabled so words read in the correct order.
 const HEBREW_FONT_URL = '/fonts/Hebrew-Regular.ttf';
 const HEBREW_FONT_NAME = 'Hebrew';
-const HEBREW_RANGE = /[֐-׿יִ-ﭏ]/;
 
 async function fetchFontBase64(url: string): Promise<string | null> {
   try {
@@ -34,15 +32,6 @@ async function fetchFontBase64(url: string): Promise<string | null> {
   } catch {
     return null;
   }
-}
-
-// jsPDF draws glyphs in the order it receives them and does not apply bidi.
-// For pure-Hebrew strings we reverse the codepoints so the right-aligned cell
-// reads correctly. Mixed Hebrew/Latin strings are uncommon for product names
-// and are left as-is.
-function reverseHebrewIfNeeded(s: string): string {
-  if (!s || !HEBREW_RANGE.test(s)) return s;
-  return Array.from(s).reverse().join('');
 }
 
 const BRAND  = [122, 31, 61] as const;
@@ -160,15 +149,14 @@ export async function exportToPdf(args: ExportArgs) {
     const p = args.productByKey.get(it.productKey);
     return cols.map((c) => {
       if (c.id === 'image') return '';
-      const text = cellText(c.id, {
+      // Hebrew cells are drawn manually in didDrawCell so we can flip jsPDF
+      // into R2L mode just for that draw call. Pass the raw value through
+      // the body so autoTable still sizes the cell correctly.
+      return cellText(c.id, {
         product: p,
         item: it,
         defaultDiscountPercent: args.defaultDiscountPercent
       });
-      // jsPDF doesn't apply bidi — pre-reverse Hebrew so the glyphs appear in
-      // the correct visual order in a right-aligned cell.
-      if (c.id === 'productNameHe' && hebrewFontReady) return reverseHebrewIfNeeded(text);
-      return text;
     });
   });
 
@@ -215,10 +203,46 @@ export async function exportToPdf(args: ExportArgs) {
     },
     alternateRowStyles: { fillColor: [ROW[0], ROW[1], ROW[2]] },
     columnStyles,
+    willDrawCell: (data: CellHookData) => {
+      // Suppress autoTable's default text drawing for Hebrew cells — we draw
+      // them ourselves in didDrawCell with R2L mode so the words read in the
+      // correct order.
+      if (data.section !== 'body') return;
+      const col = cols[data.column.index];
+      if (col?.id === 'productNameHe' && hebrewFontReady) {
+        data.cell.text = [];
+      }
+    },
     didDrawCell: (data: CellHookData) => {
       if (data.section !== 'body') return;
       const col = cols[data.column.index];
-      if (!col || col.id !== 'image') return;
+      if (!col) return;
+
+      if (col.id === 'productNameHe' && hebrewFontReady) {
+        const it = args.items[data.row.index];
+        if (!it) return;
+        const p = args.productByKey.get(it.productKey);
+        const text = p?.productNameHe || '';
+        if (!text) return;
+        const cell = data.cell;
+        const pad = 6;
+        doc.setFont(HEBREW_FONT_NAME, 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(INK[0], INK[1], INK[2]);
+        const prevR2L = doc.getR2L ? doc.getR2L() : false;
+        doc.setR2L(true);
+        // R2L mode + halign:'right' anchors the text at the cell's right edge
+        // and lays glyphs out right-to-left, so multi-word Hebrew reads in the
+        // expected order.
+        doc.text(text, cell.x + cell.width - pad, cell.y + cell.height / 2 + 3, {
+          align: 'right',
+          baseline: 'alphabetic'
+        });
+        doc.setR2L(prevR2L);
+        return;
+      }
+
+      if (col.id !== 'image') return;
       const it = args.items[data.row.index];
       if (!it) return;
       const p = args.productByKey.get(it.productKey);
