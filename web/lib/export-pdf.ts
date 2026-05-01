@@ -226,18 +226,29 @@ export async function exportToPdf(args: ExportArgs) {
         if (!text) return;
         const cell = data.cell;
         const pad = 6;
+        const fontSize = 9;
+        const lineHeight = fontSize * 1.15;
+
         doc.setFont(HEBREW_FONT_NAME, 'normal');
-        doc.setFontSize(9);
+        doc.setFontSize(fontSize);
         doc.setTextColor(INK[0], INK[1], INK[2]);
+
+        // Wrap to the cell's inner width so long names break across lines
+        // instead of bleeding into the neighboring column. splitTextToSize
+        // uses the currently-active font to measure widths.
+        const maxWidth = Math.max(10, cell.width - pad * 2);
+        const lines = doc.splitTextToSize(text, maxWidth) as string[];
+        const totalH = lines.length * lineHeight;
+        const firstBaseline = cell.y + (cell.height - totalH) / 2 + lineHeight - 2;
+
         const prevR2L = doc.getR2L ? doc.getR2L() : false;
         doc.setR2L(true);
-        // R2L mode + halign:'right' anchors the text at the cell's right edge
-        // and lays glyphs out right-to-left, so multi-word Hebrew reads in the
-        // expected order.
-        doc.text(text, cell.x + cell.width - pad, cell.y + cell.height / 2 + 3, {
-          align: 'right',
-          baseline: 'alphabetic'
-        });
+        for (let i = 0; i < lines.length; i++) {
+          doc.text(lines[i], cell.x + cell.width - pad, firstBaseline + i * lineHeight, {
+            align: 'right',
+            baseline: 'alphabetic'
+          });
+        }
         doc.setR2L(prevR2L);
         return;
       }
