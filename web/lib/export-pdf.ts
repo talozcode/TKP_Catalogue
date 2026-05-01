@@ -240,8 +240,10 @@ export async function exportToPdf(args: ExportArgs) {
         // right-to-left reproduces the original Hebrew word order.
         const maxWidth = Math.max(10, cell.width - pad * 2);
         const lines = doc.splitTextToSize(text, maxWidth) as string[];
-        const totalH = lines.length * lineHeight;
-        const firstBaseline = cell.y + (cell.height - totalH) / 2 + lineHeight - 2;
+        // Top-align so Hebrew lines up with the other columns (which autoTable
+        // draws from the top down). Baseline of the first line sits one
+        // line-height below the cell's top padding.
+        const firstBaseline = cell.y + pad + lineHeight - 2;
         const anchorX = cell.x + cell.width - pad;
         for (let i = 0; i < lines.length; i++) {
           const visual = Array.from(lines[i]).reverse().join('');
