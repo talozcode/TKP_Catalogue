@@ -233,26 +233,23 @@ export async function exportToPdf(args: ExportArgs) {
         doc.setFontSize(fontSize);
         doc.setTextColor(INK[0], INK[1], INK[2]);
 
-        // Wrap to the cell's inner width so long names break across lines
-        // instead of bleeding into the neighboring column. splitTextToSize
-        // uses the currently-active font to measure widths.
+        // Wrap on the original (logical-order) text so the line breaks fall
+        // on word boundaries, then reverse each line's characters before
+        // drawing. With align: 'right' the right edge of the rendered glyph
+        // run sits at the cell's right padding, and reading the cell
+        // right-to-left reproduces the original Hebrew word order.
         const maxWidth = Math.max(10, cell.width - pad * 2);
         const lines = doc.splitTextToSize(text, maxWidth) as string[];
         const totalH = lines.length * lineHeight;
         const firstBaseline = cell.y + (cell.height - totalH) / 2 + lineHeight - 2;
-
-        const prevR2L = doc.getR2L ? doc.getR2L() : false;
-        doc.setR2L(true);
-        // In R2L mode jsPDF anchors at x and flows glyphs leftward, so x is
-        // the visual right edge of the line. Don't pass align: 'right' — that
-        // option re-centers the text in R2L mode for some jsPDF builds.
         const anchorX = cell.x + cell.width - pad;
         for (let i = 0; i < lines.length; i++) {
-          doc.text(lines[i], anchorX, firstBaseline + i * lineHeight, {
+          const visual = Array.from(lines[i]).reverse().join('');
+          doc.text(visual, anchorX, firstBaseline + i * lineHeight, {
+            align: 'right',
             baseline: 'alphabetic'
           });
         }
-        doc.setR2L(prevR2L);
         return;
       }
 
