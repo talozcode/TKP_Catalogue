@@ -104,9 +104,19 @@ export async function ensureSheet(name: string, headers: string[]): Promise<void
   cachedSheetIds = null;
 }
 
-export type RawRow = Record<string, unknown>;
+export type RawRow = Record<string, unknown> & {
+  /** Original cell values keyed by 0-based column index, for positional fallbacks. */
+  __cells?: unknown[];
+};
 
 export async function readAll(name: string): Promise<RawRow[]> {
+  const { rows } = await readAllWithHeaders(name);
+  return rows;
+}
+
+export async function readAllWithHeaders(
+  name: string
+): Promise<{ headers: string[]; rows: RawRow[] }> {
   const api = sheetsClient();
   const res = await api.spreadsheets.values.get({
     spreadsheetId: spreadsheetId(),
@@ -115,19 +125,19 @@ export async function readAll(name: string): Promise<RawRow[]> {
     dateTimeRenderOption: 'FORMATTED_STRING'
   });
   const values = res.data.values || [];
-  if (values.length < 2) return [];
+  if (values.length < 2) return { headers: values[0]?.map((h) => String(h ?? '').trim()) || [], rows: [] };
   const headers = values[0].map((h) => String(h ?? '').trim());
-  const out: RawRow[] = [];
+  const rows: RawRow[] = [];
   for (let r = 1; r < values.length; r++) {
     const row = values[r];
-    const obj: RawRow = {};
+    const obj: RawRow = { __cells: row };
     for (let c = 0; c < headers.length; c++) {
       const h = headers[c];
       if (h) obj[h] = row[c];
     }
-    out.push(obj);
+    rows.push(obj);
   }
-  return out;
+  return { headers, rows };
 }
 
 async function getHeaders(name: string): Promise<string[]> {

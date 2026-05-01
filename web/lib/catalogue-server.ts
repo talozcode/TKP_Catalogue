@@ -65,7 +65,9 @@ async function ensureCatalogueSheets(): Promise<void> {
 
 // Try a few plausible header names for the Hebrew product name so a sheet
 // authored with a different label (e.g. "Hebrew Name", "שם בעברית") still
-// populates the field instead of silently coming back empty.
+// populates the field instead of silently coming back empty. As a last
+// resort, fall back to whatever sits in column C (the position the user told
+// us their Hebrew name lives in), so the export works regardless of header.
 function pickHebrewName(r: Record<string, unknown>): string {
   const candidates = [
     'Product Name (Hebrew)',
@@ -80,9 +82,14 @@ function pickHebrewName(r: Record<string, unknown>): string {
     const v = r[k];
     if (v != null && String(v).trim() !== '') return String(v);
   }
-  // Fallback: any header containing "hebrew" (case-insensitive).
   for (const [k, v] of Object.entries(r)) {
+    if (k === '__cells') continue;
     if (/hebrew/i.test(k) && v != null && String(v).trim() !== '') return String(v);
+  }
+  const cells = (r as { __cells?: unknown[] }).__cells;
+  if (Array.isArray(cells)) {
+    const v = cells[2]; // Column C
+    if (v != null && String(v).trim() !== '') return String(v);
   }
   return '';
 }
