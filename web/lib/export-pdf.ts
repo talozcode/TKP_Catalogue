@@ -247,7 +247,13 @@ export async function exportToPdf(args: ExportArgs) {
         const firstBaseline = cell.y + pad + lineHeight - 2;
         const anchorX = cell.x + cell.width - pad;
         for (let i = 0; i < lines.length; i++) {
-          const visual = Array.from(lines[i]).reverse().join('');
+          const reversed = Array.from(lines[i]).reverse().join('');
+          // After character-reversal, bracket glyphs still curve the same way,
+          // so ( and ) end up visually pointing away from the word. Mirror them
+          // so they embrace the word correctly in the RTL visual rendering.
+          const visual = reversed.replace(/[()[\]{}<>]/g, (c) =>
+            ({ '(': ')', ')': '(', '[': ']', ']': '[', '{': '}', '}': '{', '<': '>', '>': '<' }[c] ?? c)
+          );
           doc.text(visual, anchorX, firstBaseline + i * lineHeight, {
             align: 'right',
             baseline: 'alphabetic'
