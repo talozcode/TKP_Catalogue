@@ -34,6 +34,16 @@ async function fetchFontBase64(url: string): Promise<string | null> {
   }
 }
 
+function mirrorBrackets(s: string): string {
+  return s.replace(/[()[\]{}<>]/g, (c) =>
+    ({ '(': ')', ')': '(', '[': ']', ']': '[', '{': '}', '}': '{', '<': '>', '>': '<' }[c] ?? c)
+  );
+}
+
+function toVisualRtl(text: string): string {
+  return mirrorBrackets(Array.from(text).reverse().join(''));
+}
+
 const BRAND  = [122, 31, 61] as const;
 const GOLD   = [201, 161, 78] as const;
 const INK    = [26, 15, 18] as const;
@@ -142,7 +152,7 @@ export async function exportToPdf(args: ExportArgs) {
     }
   }
 
-  const headerBottom = drawDocHeader(doc, args, docName, logo, pageW, margin);
+  const headerBottom = drawDocHeader(doc, args, docName, logo, pageW, margin, hebrewFontReady);
 
   const head = cols.map((c) => c.label);
   const body = args.items.map((it) => {
@@ -247,14 +257,7 @@ export async function exportToPdf(args: ExportArgs) {
         const firstBaseline = cell.y + pad + lineHeight - 2;
         const anchorX = cell.x + cell.width - pad;
         for (let i = 0; i < lines.length; i++) {
-          const reversed = Array.from(lines[i]).reverse().join('');
-          // After character-reversal, bracket glyphs still curve the same way,
-          // so ( and ) end up visually pointing away from the word. Mirror them
-          // so they embrace the word correctly in the RTL visual rendering.
-          const visual = reversed.replace(/[()[\]{}<>]/g, (c) =>
-            ({ '(': ')', ')': '(', '[': ']', ']': '[', '{': '}', '}': '{', '<': '>', '>': '<' }[c] ?? c)
-          );
-          doc.text(visual, anchorX, firstBaseline + i * lineHeight, {
+          doc.text(toVisualRtl(lines[i]), anchorX, firstBaseline + i * lineHeight, {
             align: 'right',
             baseline: 'alphabetic'
           });
@@ -322,7 +325,8 @@ function drawDocHeader(
   docName: string,
   logo: ImageData | null,
   pageW: number,
-  margin: number
+  margin: number,
+  hebrewFontReady: boolean
 ): number {
   const top = margin;
   let logoBottom = top;
@@ -350,10 +354,16 @@ function drawDocHeader(
     }
   }
 
-  doc.setFont('times', 'bold');
+  const titleHasHebrew = hebrewFontReady && /[֐-׿]/.test(docName);
   doc.setFontSize(22);
   doc.setTextColor(BRAND[0], BRAND[1], BRAND[2]);
-  doc.text(docName, titleX, top + 22);
+  if (titleHasHebrew) {
+    doc.setFont(HEBREW_FONT_NAME, 'normal');
+    doc.text(toVisualRtl(docName), pageW - margin, top + 22, { align: 'right' });
+  } else {
+    doc.setFont('times', 'bold');
+    doc.text(docName, titleX, top + 22);
+  }
 
   let bottom = Math.max(logoBottom, top + 30);
   if (args.showDiscountColumn && args.defaultDiscountPercent > 0) {
