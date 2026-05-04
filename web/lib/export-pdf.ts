@@ -184,6 +184,7 @@ export async function exportToPdf(args: ExportArgs) {
   autoTable(doc, {
     head: [head],
     body,
+    rowPageBreak: 'avoid',
     startY: headerBottom + 8,
     margin: { left: margin, right: margin, bottom: 44 },
     styles: {
