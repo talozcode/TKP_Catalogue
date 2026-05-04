@@ -16,9 +16,14 @@ const LOGO_URL =
 // jsPDF's built-in fonts have no Hebrew glyphs. We bundle Open Sans Hebrew
 // Regular (Google Fonts, Apache 2.0) under /public/fonts so the load is
 // same-origin — no CDN flakiness, no CORS. Hebrew cells are drawn manually
-// with jsPDF's R2L mode enabled so words read in the correct order.
+// so words read in the correct order.
 const HEBREW_FONT_URL = '/fonts/Hebrew-Regular.ttf';
 const HEBREW_FONT_NAME = 'Hebrew';
+
+const HEB_RE = /[֐-׿]/;
+function hasHebrew(s: string): boolean {
+  return HEB_RE.test(s);
+}
 
 async function fetchFontBase64(url: string): Promise<string | null> {
   try {
@@ -34,14 +39,44 @@ async function fetchFontBase64(url: string): Promise<string | null> {
   }
 }
 
+// After character-reversal, bracket glyphs still curve in the same direction
+// so they end up pointing away from the word. Mirror paired brackets so they
+// visually embrace the word correctly.
 function mirrorBrackets(s: string): string {
   return s.replace(/[()[\]{}<>]/g, (c) =>
     ({ '(': ')', ')': '(', '[': ']', ']': '[', '{': '}', '}': '{', '<': '>', '>': '<' }[c] ?? c)
   );
 }
 
+// jsPDF has no bidi support. Approach: split on word boundaries (using the
+// original logical-order text so breaks fall correctly), reverse each line's
+// characters, mirror brackets, then draw LTR right-aligned. Reading the cell
+// right-to-left reproduces the original Hebrew word order.
 function toVisualRtl(text: string): string {
   return mirrorBrackets(Array.from(text).reverse().join(''));
+}
+
+// Draw Hebrew text top-aligned inside a cell, word-wrapped to maxWidth.
+function drawHebrewCell(
+  doc: jsPDF,
+  text: string,
+  cell: { x: number; y: number; width: number; height: number },
+  fontSize: number
+) {
+  const pad = 6;
+  const lineHeight = fontSize * 1.15;
+  doc.setFont(HEBREW_FONT_NAME, 'normal');
+  doc.setFontSize(fontSize);
+  const maxWidth = Math.max(10, cell.width - pad * 2);
+  const lines = doc.splitTextToSize(text, maxWidth) as string[];
+  const firstBaseline = cell.y + pad + lineHeight - 2;
+  const anchorX = cell.x + cell.width - pad;
+  for (let i = 0; i < lines.length; i++) {
+    doc.text(toVisualRtl(lines[i]), anchorX, firstBaseline + i * lineHeight, {
+      align: 'right',
+      baseline: 'alphabetic'
+    });
+  }
 }
 
 const BRAND  = [122, 31, 61] as const;
@@ -109,13 +144,19 @@ export async function exportToPdf(args: ExportArgs) {
   const docName = displayCatalogueName(args.catalogueName, args.titleDate);
   const includeImages = cols.some((c) => c.id === 'image');
 
-  const includeHebrew = cols.some((c) => c.id === 'productNameHe');
+  // Load Hebrew font whenever ANY Hebrew text will appear: dedicated column,
+  // catalogue name, per-product notes, or catalogue-level notes.
+  const needsHebrewFont =
+    cols.some((c) => c.id === 'productNameHe') ||
+    hasHebrew(args.catalogueName) ||
+    hasHebrew(args.notes) ||
+    args.items.some((it) => hasHebrew(it.customNote || ''));
 
   const imageMap = new Map<string, ImageData | null>();
   const tasks: Promise<unknown>[] = [];
   const logoPromise = fetchImageAsData(LOGO_URL);
   tasks.push(logoPromise);
-  const hebrewFontPromise: Promise<string | null> = includeHebrew
+  const hebrewFontPromise: Promise<string | null> = needsHebrewFont
     ? fetchFontBase64(HEBREW_FONT_URL)
     : Promise.resolve(null);
   tasks.push(hebrewFontPromise);
@@ -146,9 +187,8 @@ export async function exportToPdf(args: ExportArgs) {
       doc.addFont('Hebrew-Regular.ttf', HEBREW_FONT_NAME, 'normal');
       hebrewFontReady = true;
     } catch {
-      // If font registration fails (jsPDF parse error etc.) fall back to the
-      // default font — Hebrew glyphs will render as boxes but the export still
-      // succeeds for the rest of the document.
+      // Font registration failed — Hebrew glyphs will render as boxes but the
+      // export still succeeds for the rest of the document.
     }
   }
 
@@ -159,9 +199,8 @@ export async function exportToPdf(args: ExportArgs) {
     const p = args.productByKey.get(it.productKey);
     return cols.map((c) => {
       if (c.id === 'image') return '';
-      // Hebrew cells are drawn manually in didDrawCell so we can flip jsPDF
-      // into R2L mode just for that draw call. Pass the raw value through
-      // the body so autoTable still sizes the cell correctly.
+      // Hebrew cells are drawn manually in didDrawCell. Pass the raw value
+      // through so autoTable still sizes the cell correctly.
       return cellText(c.id, {
         product: p,
         item: it,
@@ -188,6 +227,7 @@ export async function exportToPdf(args: ExportArgs) {
       s.font = HEBREW_FONT_NAME;
       s.halign = 'right';
     }
+    if (c.id === 'note') s.halign = 'right';
     columnStyles[idx] = s;
   });
 
@@ -215,13 +255,18 @@ export async function exportToPdf(args: ExportArgs) {
     alternateRowStyles: { fillColor: [ROW[0], ROW[1], ROW[2]] },
     columnStyles,
     willDrawCell: (data: CellHookData) => {
-      // Suppress autoTable's default text drawing for Hebrew cells — we draw
-      // them ourselves in didDrawCell with R2L mode so the words read in the
-      // correct order.
-      if (data.section !== 'body') return;
+      // Suppress autoTable's default text draw for any cell we will render
+      // ourselves with the Hebrew font in didDrawCell.
+      if (data.section !== 'body' || !hebrewFontReady) return;
       const col = cols[data.column.index];
-      if (col?.id === 'productNameHe' && hebrewFontReady) {
+      if (!col) return;
+      if (col.id === 'productNameHe') {
         data.cell.text = [];
+        return;
+      }
+      if (col.id === 'note') {
+        const it = args.items[data.row.index];
+        if (it && hasHebrew(it.customNote || '')) data.cell.text = [];
       }
     },
     didDrawCell: (data: CellHookData) => {
@@ -235,33 +280,18 @@ export async function exportToPdf(args: ExportArgs) {
         const p = args.productByKey.get(it.productKey);
         const text = p?.productNameHe || '';
         if (!text) return;
-        const cell = data.cell;
-        const pad = 6;
-        const fontSize = 9;
-        const lineHeight = fontSize * 1.15;
-
-        doc.setFont(HEBREW_FONT_NAME, 'normal');
-        doc.setFontSize(fontSize);
         doc.setTextColor(INK[0], INK[1], INK[2]);
+        drawHebrewCell(doc, text, data.cell, 9);
+        return;
+      }
 
-        // Wrap on the original (logical-order) text so the line breaks fall
-        // on word boundaries, then reverse each line's characters before
-        // drawing. With align: 'right' the right edge of the rendered glyph
-        // run sits at the cell's right padding, and reading the cell
-        // right-to-left reproduces the original Hebrew word order.
-        const maxWidth = Math.max(10, cell.width - pad * 2);
-        const lines = doc.splitTextToSize(text, maxWidth) as string[];
-        // Top-align so Hebrew lines up with the other columns (which autoTable
-        // draws from the top down). Baseline of the first line sits one
-        // line-height below the cell's top padding.
-        const firstBaseline = cell.y + pad + lineHeight - 2;
-        const anchorX = cell.x + cell.width - pad;
-        for (let i = 0; i < lines.length; i++) {
-          doc.text(toVisualRtl(lines[i]), anchorX, firstBaseline + i * lineHeight, {
-            align: 'right',
-            baseline: 'alphabetic'
-          });
-        }
+      if (col.id === 'note' && hebrewFontReady) {
+        const it = args.items[data.row.index];
+        if (!it) return;
+        const text = it.customNote || '';
+        if (!text || !hasHebrew(text)) return;
+        doc.setTextColor(INK[0], INK[1], INK[2]);
+        drawHebrewCell(doc, text, data.cell, 9);
         return;
       }
 
@@ -302,17 +332,21 @@ export async function exportToPdf(args: ExportArgs) {
       doc.setFontSize(8);
       doc.setTextColor(MUTED[0], MUTED[1], MUTED[2]);
       doc.setFont('helvetica', 'normal');
-      doc.text(
-        `The Kosher Place · ${docName}`,
-        margin,
-        pageH - 18
-      );
-      doc.text(
-        `Page ${current} of ${total}`,
-        pageW - margin,
-        pageH - 18,
-        { align: 'right' }
-      );
+
+      const nameHasHebrew = hebrewFontReady && hasHebrew(args.catalogueName);
+      if (nameHasHebrew) {
+        // Left: brand + date in Helvetica; centre: Hebrew catalogue name.
+        const leftText = args.titleDate
+          ? `The Kosher Place · ${args.titleDate}`
+          : 'The Kosher Place';
+        doc.text(leftText, margin, pageH - 18);
+        doc.setFont(HEBREW_FONT_NAME, 'normal');
+        doc.text(toVisualRtl(args.catalogueName), pageW / 2, pageH - 18, { align: 'center' });
+        doc.setFont('helvetica', 'normal');
+      } else {
+        doc.text(`The Kosher Place · ${docName}`, margin, pageH - 18);
+      }
+      doc.text(`Page ${current} of ${total}`, pageW - margin, pageH - 18, { align: 'right' });
     }
   });
 
@@ -354,12 +388,19 @@ function drawDocHeader(
     }
   }
 
-  const titleHasHebrew = hebrewFontReady && /[֐-׿]/.test(docName);
+  const nameHasHebrew = hebrewFontReady && hasHebrew(args.catalogueName);
   doc.setFontSize(22);
   doc.setTextColor(BRAND[0], BRAND[1], BRAND[2]);
-  if (titleHasHebrew) {
+  if (nameHasHebrew) {
+    // Hebrew name: right-aligned. Date (English): left side near the logo.
     doc.setFont(HEBREW_FONT_NAME, 'normal');
-    doc.text(toVisualRtl(docName), pageW - margin, top + 22, { align: 'right' });
+    doc.text(toVisualRtl(args.catalogueName), pageW - margin, top + 22, { align: 'right' });
+    if (args.titleDate) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(11);
+      doc.setTextColor(MUTED[0], MUTED[1], MUTED[2]);
+      doc.text(args.titleDate, titleX, top + 22);
+    }
   } else {
     doc.setFont('times', 'bold');
     doc.text(docName, titleX, top + 22);
@@ -379,12 +420,27 @@ function drawDocHeader(
   }
 
   if (args.notes) {
-    doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(INK[0], INK[1], INK[2]);
-    const lines = doc.splitTextToSize(args.notes, pageW - margin * 2) as string[];
-    doc.text(lines, margin, bottom + 16);
-    bottom += 16 + lines.length * 11;
+    if (hebrewFontReady && hasHebrew(args.notes)) {
+      doc.setFont(HEBREW_FONT_NAME, 'normal');
+      const maxWidth = pageW - margin * 2;
+      const lines = doc.splitTextToSize(args.notes, maxWidth) as string[];
+      const anchorX = pageW - margin;
+      const lineHeight = 9 * 1.15;
+      for (let i = 0; i < lines.length; i++) {
+        doc.text(toVisualRtl(lines[i]), anchorX, bottom + 16 + i * lineHeight, {
+          align: 'right',
+          baseline: 'alphabetic'
+        });
+      }
+      bottom += 16 + lines.length * 11;
+    } else {
+      doc.setFont('helvetica', 'normal');
+      const lines = doc.splitTextToSize(args.notes, pageW - margin * 2) as string[];
+      doc.text(lines, margin, bottom + 16);
+      bottom += 16 + lines.length * 11;
+    }
   }
 
   // Brand rule
