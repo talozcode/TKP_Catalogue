@@ -1,5 +1,6 @@
 'use client';
-import { ShoppingBag } from 'lucide-react';
+import { ShoppingBag, LogOut } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import clsx from 'clsx';
 import { formatDate } from '@/lib/format';
 
@@ -19,6 +20,13 @@ export function Header({
   catalogueCount,
   onOpenCatalogue
 }: Props) {
+  const router = useRouter();
+
+  async function logout() {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    router.push('/login');
+  }
+
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-screen-2xl items-center justify-between gap-4 px-4 py-3 md:px-6">
@@ -49,6 +57,15 @@ export function Header({
               <div>Last sync {formatDate(lastSyncedAt)}</div>
             ) : null}
           </div>
+
+          <button
+            onClick={logout}
+            className="hidden rounded-full p-2 text-muted transition hover:bg-brandSoft hover:text-brand sm:inline-flex"
+            title="Sign out"
+            aria-label="Sign out"
+          >
+            <LogOut size={16} />
+          </button>
 
           <button
             onClick={onOpenCatalogue}
