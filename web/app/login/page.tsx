@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff, Lock } from 'lucide-react';
 import clsx from 'clsx';
@@ -7,7 +7,7 @@ import clsx from 'clsx';
 const LOGO_URL =
   'https://res.cloudinary.com/dakhwegyt/image/upload/v1776678465/kp-primary_4x_totp25.png';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const from = params.get('from') || '/';
@@ -16,14 +16,6 @@ export default function LoginPage() {
   const [show, setShow] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  // If APP_PASSWORD is not set the app is open — redirect immediately.
-  useEffect(() => {
-    fetch('/api/auth/login', { method: 'POST', body: JSON.stringify({ password: '' }), headers: { 'Content-Type': 'application/json' } })
-      .then((r) => { if (r.ok) router.replace(from); })
-      .catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -49,6 +41,48 @@ export default function LoginPage() {
   }
 
   return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="relative">
+        <input
+          type={show ? 'text' : 'password'}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Password"
+          autoFocus
+          autoComplete="current-password"
+          className={clsx(
+            'w-full rounded-lg border bg-white px-3 py-2.5 pr-10 text-sm text-ink placeholder-muted outline-none transition focus:ring-2 focus:ring-brand/30',
+            error ? 'border-red-400 focus:border-red-400' : 'border-line focus:border-brand'
+          )}
+        />
+        <button
+          type="button"
+          onClick={() => setShow((s) => !s)}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink"
+          tabIndex={-1}
+          aria-label={show ? 'Hide password' : 'Show password'}
+        >
+          {show ? <EyeOff size={16} /> : <Eye size={16} />}
+        </button>
+      </div>
+
+      {error ? (
+        <p className="text-xs font-medium text-red-600">{error}</p>
+      ) : null}
+
+      <button
+        type="submit"
+        disabled={loading || !password}
+        className="w-full rounded-lg bg-brand py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brandDeep disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {loading ? 'Signing in…' : 'Sign in'}
+      </button>
+    </form>
+  );
+}
+
+export default function LoginPage() {
+  return (
     <div className="flex min-h-screen items-center justify-center bg-bg px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center gap-3">
@@ -67,44 +101,9 @@ export default function LoginPage() {
             <Lock size={14} />
             Enter your password to continue
           </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="relative">
-              <input
-                type={show ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-                autoFocus
-                autoComplete="current-password"
-                className={clsx(
-                  'w-full rounded-lg border bg-white px-3 py-2.5 pr-10 text-sm text-ink placeholder-muted outline-none transition focus:ring-2 focus:ring-brand/30',
-                  error ? 'border-red-400 focus:border-red-400' : 'border-line focus:border-brand'
-                )}
-              />
-              <button
-                type="button"
-                onClick={() => setShow((s) => !s)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink"
-                tabIndex={-1}
-                aria-label={show ? 'Hide password' : 'Show password'}
-              >
-                {show ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-
-            {error ? (
-              <p className="text-xs font-medium text-red-600">{error}</p>
-            ) : null}
-
-            <button
-              type="submit"
-              disabled={loading || !password}
-              className="w-full rounded-lg bg-brand py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brandDeep disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {loading ? 'Signing in…' : 'Sign in'}
-            </button>
-          </form>
+          <Suspense>
+            <LoginForm />
+          </Suspense>
         </div>
 
         <p className="mt-4 text-center text-[11px] text-muted">
