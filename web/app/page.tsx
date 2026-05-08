@@ -46,14 +46,15 @@ export default function Page() {
     return m;
   }, [products]);
 
-  const [query, setQuery]       = useState('');
-  const [category, setCategory] = useState('');
-  const [tags, setTags]         = useState<string[]>([]);
-  const [onlyNew, setOnlyNew]   = useState(false);
+  const [query, setQuery]           = useState('');
+  const [category, setCategory]     = useState('');
+  const [tags, setTags]             = useState<string[]>([]);
+  const [onlyNew, setOnlyNew]       = useState(false);
+  const [inStockOnly, setInStockOnly] = useState(false);
 
   const results = useMemo(
-    () => searchProducts(index, { query, category, tags, onlyNew }),
-    [index, query, category, tags, onlyNew]
+    () => searchProducts(index, { query, category, tags, onlyNew, inStockOnly }),
+    [index, query, category, tags, onlyNew, inStockOnly]
   );
   const newCount = useMemo(() => countNewProducts(index), [index]);
 
@@ -214,15 +215,18 @@ export default function Page() {
             allTags={index.tags}
             onlyNew={onlyNew}
             newCount={newCount}
+            inStockOnly={inStockOnly}
             onQuery={setQuery}
             onCategory={setCategory}
             onTagsChange={setTags}
             onOnlyNew={setOnlyNew}
+            onInStockOnly={setInStockOnly}
             onClearAll={() => {
               setQuery('');
               setCategory('');
               setTags([]);
               setOnlyNew(false);
+              setInStockOnly(false);
             }}
             resultCount={results.length}
           />

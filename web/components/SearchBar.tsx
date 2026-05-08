@@ -1,5 +1,5 @@
 'use client';
-import { Search, X, Sparkles, ChevronDown, Check, Eraser } from 'lucide-react';
+import { Search, X, Sparkles, ChevronDown, Check, Eraser, PackageCheck } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { Input } from './ui/Input';
@@ -12,10 +12,12 @@ type Props = {
   allTags: string[];
   onlyNew: boolean;
   newCount: number;
+  inStockOnly: boolean;
   onQuery: (q: string) => void;
   onCategory: (c: string) => void;
   onTagsChange: (t: string[]) => void;
   onOnlyNew: (v: boolean) => void;
+  onInStockOnly: (v: boolean) => void;
   onClearAll: () => void;
   resultCount: number;
 };
@@ -28,14 +30,16 @@ export function SearchBar({
   allTags,
   onlyNew,
   newCount,
+  inStockOnly,
   onQuery,
   onCategory,
   onTagsChange,
   onOnlyNew,
+  onInStockOnly,
   onClearAll,
   resultCount
 }: Props) {
-  const hasFilter = !!(query || category || tags.length || onlyNew);
+  const hasFilter = !!(query || category || tags.length || onlyNew || inStockOnly);
 
   return (
     <div className="rounded-2xl border border-line bg-white p-3 shadow-card">
@@ -121,25 +125,41 @@ export function SearchBar({
             </button>
           ) : null}
         </div>
-        <button
-          type="button"
-          onClick={() => onOnlyNew(!onlyNew)}
-          disabled={newCount === 0 && !onlyNew}
-          className={clsx(
-            'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition',
-            onlyNew
-              ? 'border-gold bg-goldSoft text-goldDeep shadow-sm'
-              : 'border-line bg-white text-muted hover:border-gold/60 hover:text-goldDeep',
-            newCount === 0 && !onlyNew && 'opacity-50'
-          )}
-          title={`Show only products added in the last 7 days${newCount ? ` (${newCount} available)` : ''}`}
-        >
-          <Sparkles size={12} />
-          New only
-          <span className="rounded-full bg-white/60 px-1.5 tabular-nums">
-            {newCount}
-          </span>
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => onInStockOnly(!inStockOnly)}
+            className={clsx(
+              'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition',
+              inStockOnly
+                ? 'border-green-500 bg-green-50 text-green-700 shadow-sm'
+                : 'border-line bg-white text-muted hover:border-green-400 hover:text-green-700'
+            )}
+            title="Show only products with stock > 0"
+          >
+            <PackageCheck size={12} />
+            In stock only
+          </button>
+          <button
+            type="button"
+            onClick={() => onOnlyNew(!onlyNew)}
+            disabled={newCount === 0 && !onlyNew}
+            className={clsx(
+              'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition',
+              onlyNew
+                ? 'border-gold bg-goldSoft text-goldDeep shadow-sm'
+                : 'border-line bg-white text-muted hover:border-gold/60 hover:text-goldDeep',
+              newCount === 0 && !onlyNew && 'opacity-50'
+            )}
+            title={`Show only products added in the last 7 days${newCount ? ` (${newCount} available)` : ''}`}
+          >
+            <Sparkles size={12} />
+            New only
+            <span className="rounded-full bg-white/60 px-1.5 tabular-nums">
+              {newCount}
+            </span>
+          </button>
+        </div>
       </div>
     </div>
   );

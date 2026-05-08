@@ -112,7 +112,8 @@ function mapProduct(r: Record<string, unknown>): Product {
     ecommerceCategory: str(r['Ecommerce Category']),
     salesPrice: num(r['Sales Price']),
     wholesalePrice: num(r['Wholesale Price']),
-    imageUrl: str(r['Image URL'])
+    imageUrl: str(r['Image URL']),
+    actualAvailableQty: num(r['Actual Available Qty'])
   };
 }
 

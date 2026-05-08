@@ -17,6 +17,7 @@ export type Product = {
   salesPrice: number | null;
   wholesalePrice: number | null;
   imageUrl: string;
+  actualAvailableQty: number | null;
 };
 
 export type GetProductsResponse = {

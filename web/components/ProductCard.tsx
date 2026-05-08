@@ -47,6 +47,17 @@ export function ProductCard({ product, inCatalogue, onAdd, onRemove }: Props) {
             <Sparkles size={10} /> New
           </span>
         ) : null}
+        {product.actualAvailableQty !== null ? (
+          <span
+            className={clsx(
+              'absolute bottom-2 left-2 rounded-full px-2 py-0.5 text-[10px] font-semibold tabular-nums text-white shadow-sm',
+              product.actualAvailableQty > 0 ? 'bg-green-500' : 'bg-red-500'
+            )}
+            title={`Available qty: ${product.actualAvailableQty}`}
+          >
+            {product.actualAvailableQty}
+          </span>
+        ) : null}
         <button
           onClick={inCatalogue ? onRemove : onAdd}
           className={clsx(
