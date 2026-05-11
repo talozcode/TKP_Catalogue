@@ -1,7 +1,7 @@
 'use client';
 import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Folder, Tag } from 'lucide-react';
+import { Folder, Plus, Tag } from 'lucide-react';
 
 import { api } from '@/lib/api';
 import { useCatalogue, visibleItems } from '@/lib/store';
@@ -57,6 +57,7 @@ export default function Page() {
     [index, query, category, tags, onlyNew, inStockOnly]
   );
   const newCount = useMemo(() => countNewProducts(index), [index]);
+  const hasResults = results.length > 0;
 
   // Catalogue state
   const items                 = useCatalogue(visibleItems);
@@ -161,6 +162,12 @@ export default function Page() {
     addSource('tag', t);
     toast.info(`Added ${keys.length} tagged ${t}`);
   }
+  function addAllResults() {
+    if (!results.length) return;
+    const keys = results.map((p) => p.internalReference);
+    addMany(keys, 'search');
+    toast.info(`Added ${keys.length} product${keys.length === 1 ? '' : 's'} to catalogue`);
+  }
 
   function doExportXlsx() {
     const s = cs();
@@ -231,16 +238,21 @@ export default function Page() {
             resultCount={results.length}
           />
 
-          {(category || tags.length === 1) ? (
+          {(category || tags.length === 1 || query.trim()) && hasResults ? (
             <div className="flex flex-wrap gap-2">
               {category ? (
                 <Button size="sm" variant="primary" onClick={addByCategory}>
-                  <Folder size={14} /> Add all {results.length} in “{category}”
+                  <Folder size={14} /> Add all {results.length} in &ldquo;{category}&rdquo;
                 </Button>
               ) : null}
               {tags.length === 1 ? (
                 <Button size="sm" variant="primary" onClick={addByTag}>
-                  <Tag size={14} /> Add all {results.length} tagged “{tags[0]}”
+                  <Tag size={14} /> Add all {results.length} tagged &ldquo;{tags[0]}&rdquo;
+                </Button>
+              ) : null}
+              {query.trim() ? (
+                <Button size="sm" variant="primary" onClick={addAllResults}>
+                  <Plus size={14} /> Add all {results.length} result{results.length === 1 ? '' : 's'}
                 </Button>
               ) : null}
             </div>
