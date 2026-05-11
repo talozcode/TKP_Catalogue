@@ -2,6 +2,7 @@
 // Keep them in sync with apps-script/Products.gs and apps-script/Catalogues.gs.
 
 export type Product = {
+  key: string;              // stable unique id: internalReference ?? barcode ?? productName
   internalReference: string;
   productName: string;
   productNameHe: string;

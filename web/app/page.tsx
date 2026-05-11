@@ -42,7 +42,7 @@ export default function Page() {
   const index = useMemo(() => buildIndex(products), [products]);
   const productByKey = useMemo(() => {
     const m = new Map<string, typeof products[number]>();
-    for (const p of products) m.set(p.internalReference, p);
+    for (const p of products) m.set(p.key, p);
     return m;
   }, [products]);
 
@@ -149,7 +149,7 @@ export default function Page() {
 
   function addByCategory() {
     if (!category) return;
-    const keys = productsByCategory(index, category).map((p) => p.internalReference);
+    const keys = productsByCategory(index, category).map((p) => p.key);
     addMany(keys, 'category');
     addSource('category', category);
     toast.info(`Added ${keys.length} from ${category}`);
@@ -157,14 +157,14 @@ export default function Page() {
   function addByTag() {
     if (tags.length !== 1) return;
     const t = tags[0];
-    const keys = productsByTag(index, t).map((p) => p.internalReference);
+    const keys = productsByTag(index, t).map((p) => p.key);
     addMany(keys, 'tag');
     addSource('tag', t);
     toast.info(`Added ${keys.length} tagged ${t}`);
   }
   function addAllResults() {
     if (!results.length) return;
-    const keys = results.map((p) => p.internalReference);
+    const keys = results.map((p) => p.key);
     addMany(keys, 'search');
     toast.info(`Added ${keys.length} product${keys.length === 1 ? '' : 's'} to catalogue`);
   }

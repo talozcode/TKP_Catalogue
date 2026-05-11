@@ -32,11 +32,11 @@ export function ProductGrid({ products, inCatalogueKeys, onAdd, onRemove }: Prop
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {visible.map((p) => (
           <ProductCard
-            key={p.internalReference || p.barcode || p.productName}
+            key={p.key}
             product={p}
-            inCatalogue={inCatalogueKeys.has(p.internalReference)}
-            onAdd={() => onAdd(p.internalReference)}
-            onRemove={() => onRemove(p.internalReference)}
+            inCatalogue={inCatalogueKeys.has(p.key)}
+            onAdd={() => onAdd(p.key)}
+            onRemove={() => onRemove(p.key)}
           />
         ))}
       </div>

@@ -97,11 +97,15 @@ function pickHebrewName(r: Record<string, unknown>): string {
 function mapProduct(r: Record<string, unknown>): Product {
   let dateCreated = r['Date Created'];
   if (dateCreated instanceof Date) dateCreated = dateCreated.toISOString();
+  const internalReference = str(r['Internal Reference']);
+  const barcode = str(r['Product Barcode']);
+  const productName = str(r['Product Name']);
   return {
-    internalReference: str(r['Internal Reference']),
-    productName: str(r['Product Name']),
+    key: internalReference || barcode || productName,
+    internalReference,
+    productName,
     productNameHe: pickHebrewName(r),
-    barcode: str(r['Product Barcode']),
+    barcode,
     uom: str(r['UOM']),
     packaging: str(r['Packaging']),
     packagingUom: str(r['Packaging UOM']),
