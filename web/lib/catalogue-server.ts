@@ -100,8 +100,10 @@ function mapProduct(r: Record<string, unknown>): Product {
   const internalReference = str(r['Internal Reference']);
   const barcode = str(r['Product Barcode']);
   const productName = str(r['Product Name']);
+  const rowIndex = (r as { __rowIndex?: number }).__rowIndex ?? 0;
+  const key = internalReference || barcode || (productName ? `${productName}|${rowIndex}` : `_row${rowIndex}`);
   return {
-    key: internalReference || barcode || productName,
+    key,
     internalReference,
     productName,
     productNameHe: pickHebrewName(r),

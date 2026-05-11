@@ -107,6 +107,8 @@ export async function ensureSheet(name: string, headers: string[]): Promise<void
 export type RawRow = Record<string, unknown> & {
   /** Original cell values keyed by 0-based column index, for positional fallbacks. */
   __cells?: unknown[];
+  /** 0-based index of this row in the sheet (excluding the header row). */
+  __rowIndex?: number;
 };
 
 export async function readAll(name: string): Promise<RawRow[]> {
@@ -130,7 +132,7 @@ export async function readAllWithHeaders(
   const rows: RawRow[] = [];
   for (let r = 1; r < values.length; r++) {
     const row = values[r];
-    const obj: RawRow = { __cells: row };
+    const obj: RawRow = { __cells: row, __rowIndex: r - 1 };
     for (let c = 0; c < headers.length; c++) {
       const h = headers[c];
       if (h) obj[h] = row[c];
