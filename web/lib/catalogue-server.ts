@@ -94,14 +94,21 @@ function pickHebrewName(r: Record<string, unknown>): string {
   return '';
 }
 
+// Google Sheets formula side-effects: cells containing boolean-like strings
+// ('false', 'true', '0') are not valid product identifiers.
+function idStr(v: unknown): string {
+  const s = str(v);
+  return /^(false|true)$/i.test(s) ? '' : s;
+}
+
 function mapProduct(r: Record<string, unknown>): Product {
   let dateCreated = r['Date Created'];
   if (dateCreated instanceof Date) dateCreated = dateCreated.toISOString();
-  const internalReference = str(r['Internal Reference']);
-  const barcode = str(r['Product Barcode']);
+  const internalReference = idStr(r['Internal Reference']);
+  const barcode = idStr(r['Product Barcode']);
   const productName = str(r['Product Name']);
   const rowIndex = (r as { __rowIndex?: number }).__rowIndex ?? 0;
-  const key = internalReference || barcode || (productName ? `${productName}|${rowIndex}` : `_row${rowIndex}`);
+  const key = internalReference || barcode || `_row${rowIndex}`;
   return {
     key,
     internalReference,
