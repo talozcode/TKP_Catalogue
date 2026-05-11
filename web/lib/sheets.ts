@@ -271,7 +271,10 @@ export function newId(): string {
 }
 
 export function str(v: unknown): string {
-  return v == null ? '' : String(v);
+  // Booleans in text fields are formula side-effects (e.g. a lookup that
+  // returned FALSE). Treat them as empty rather than the string 'false'/'true'.
+  if (v == null || typeof v === 'boolean') return '';
+  return String(v);
 }
 
 export function num(v: unknown): number | null {
