@@ -101,7 +101,7 @@ type ExportArgs = {
 
 type ImageData = { dataUrl: string; w: number; h: number };
 
-async function fetchImageAsData(url: string, timeoutMs = 6000): Promise<ImageData | null> {
+async function fetchImageAsData(url: string, timeoutMs = 12000): Promise<ImageData | null> {
   try {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeoutMs);
@@ -153,27 +153,36 @@ export async function exportToPdf(args: ExportArgs) {
     args.items.some((it) => hasHebrew(it.customNote || ''));
 
   const imageMap = new Map<string, ImageData | null>();
-  const tasks: Promise<unknown>[] = [];
-  const logoPromise = fetchImageAsData(LOGO_URL);
-  tasks.push(logoPromise);
-  const hebrewFontPromise: Promise<string | null> = needsHebrewFont
-    ? fetchFontBase64(HEBREW_FONT_URL)
-    : Promise.resolve(null);
-  tasks.push(hebrewFontPromise);
 
+  // Fetch logo and Hebrew font in parallel first — they're needed before the
+  // table renders and are always small / fast.
+  const [logo, hebrewFontBase64] = await Promise.all([
+    fetchImageAsData(LOGO_URL),
+    needsHebrewFont ? fetchFontBase64(HEBREW_FONT_URL) : Promise.resolve(null)
+  ]);
+
+  // Fetch product images in batches of 8. Browsers cap concurrent connections
+  // per domain at ~6-8, so firing all images at once causes most to queue and
+  // then time out before the connection even opens. Sequential batches keep the
+  // pipeline full without overwhelming it.
   if (includeImages) {
     const seen = new Set<string>();
+    const imageUrls: string[] = [];
     for (const it of args.items) {
       const p = args.productByKey.get(it.productKey);
       if (!p?.imageUrl || seen.has(p.imageUrl)) continue;
       seen.add(p.imageUrl);
-      const url = p.imageUrl;
-      tasks.push(fetchImageAsData(url).then((d) => imageMap.set(url, d)));
+      imageUrls.push(p.imageUrl);
+    }
+    const BATCH = 8;
+    for (let i = 0; i < imageUrls.length; i += BATCH) {
+      await Promise.all(
+        imageUrls.slice(i, i + BATCH).map(async (url) => {
+          imageMap.set(url, await fetchImageAsData(url));
+        })
+      );
     }
   }
-  await Promise.all(tasks);
-  const logo = await logoPromise;
-  const hebrewFontBase64 = await hebrewFontPromise;
 
   const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
   const pageW = doc.internal.pageSize.getWidth();
