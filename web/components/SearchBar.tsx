@@ -1,5 +1,5 @@
 'use client';
-import { Search, X, Sparkles, ChevronDown, Check, Eraser, PackageCheck } from 'lucide-react';
+import { Search, X, Sparkles, ChevronDown, Check, Eraser, PackageCheck, CircleDollarSign } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { Input } from './ui/Input';
@@ -14,12 +14,14 @@ type Props = {
   onlyNew: boolean;
   newCount: number;
   inStockOnly: boolean;
+  hidePriceZero: boolean;
   onQuery: (q: string) => void;
   onCategory: (c: string) => void;
   onTagsChange: (t: string[]) => void;
   onExcludedTagsChange: (t: string[]) => void;
   onOnlyNew: (v: boolean) => void;
   onInStockOnly: (v: boolean) => void;
+  onHidePriceZero: (v: boolean) => void;
   onClearAll: () => void;
   resultCount: number;
 };
@@ -34,16 +36,18 @@ export function SearchBar({
   onlyNew,
   newCount,
   inStockOnly,
+  hidePriceZero,
   onQuery,
   onCategory,
   onTagsChange,
   onExcludedTagsChange,
   onOnlyNew,
   onInStockOnly,
+  onHidePriceZero,
   onClearAll,
   resultCount
 }: Props) {
-  const hasFilter = !!(query || category || tags.length || excludedTags.length || onlyNew || inStockOnly);
+  const hasFilter = !!(query || category || tags.length || excludedTags.length || onlyNew || inStockOnly || hidePriceZero);
 
   return (
     <div className="rounded-2xl border border-line bg-white p-3 shadow-card">
@@ -159,6 +163,20 @@ export function SearchBar({
           ) : null}
         </div>
         <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => onHidePriceZero(!hidePriceZero)}
+            className={clsx(
+              'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition',
+              hidePriceZero
+                ? 'border-brand bg-brandSoft text-brand shadow-sm'
+                : 'border-line bg-white text-muted hover:border-brand/40 hover:text-brand'
+            )}
+            title="Hide products with no price or price = 0"
+          >
+            <CircleDollarSign size={12} />
+            Has price
+          </button>
           <button
             type="button"
             onClick={() => onInStockOnly(!inStockOnly)}

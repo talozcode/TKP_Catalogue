@@ -43,6 +43,7 @@ export type SearchFilters = {
   excludedTags?: string[];
   onlyNew?: boolean;
   inStockOnly?: boolean;
+  hidePriceZero?: boolean;
 };
 
 /** A product is "new" if its dateCreated is within this many days. */
@@ -85,6 +86,7 @@ export function searchProducts(index: ProductIndex, filters: SearchFilters): Pro
     }
     if (filters.onlyNew && !isNewProduct(p, now)) continue;
     if (filters.inStockOnly && p.actualAvailableQty !== null && p.actualAvailableQty <= 0) continue;
+    if (filters.hidePriceZero && (p.salesPrice === null || p.salesPrice === 0)) continue;
     let ok = true;
     for (const t of tokens) {
       if (!h.includes(t)) { ok = false; break; }
