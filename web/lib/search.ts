@@ -40,6 +40,7 @@ export type SearchFilters = {
   query: string;
   category?: string;
   tags?: string[];
+  excludedTags?: string[];
   onlyNew?: boolean;
   inStockOnly?: boolean;
 };
@@ -60,6 +61,9 @@ export function searchProducts(index: ProductIndex, filters: SearchFilters): Pro
   const tagFilters = (filters.tags || [])
     .map((t) => t.trim().toLowerCase())
     .filter(Boolean);
+  const exclFilters = (filters.excludedTags || [])
+    .map((t) => t.trim().toLowerCase())
+    .filter(Boolean);
   const now = Date.now();
 
   const out: Product[] = [];
@@ -74,6 +78,10 @@ export function searchProducts(index: ProductIndex, filters: SearchFilters): Pro
         if (!productTags.includes(tf)) { allMatch = false; break; }
       }
       if (!allMatch) continue;
+    }
+    if (exclFilters.length) {
+      const productTags = p.tags.map((t) => t.toLowerCase());
+      if (exclFilters.some((ef) => productTags.includes(ef))) continue;
     }
     if (filters.onlyNew && !isNewProduct(p, now)) continue;
     if (filters.inStockOnly && p.actualAvailableQty !== null && p.actualAvailableQty <= 0) continue;

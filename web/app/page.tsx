@@ -46,15 +46,16 @@ export default function Page() {
     return m;
   }, [products]);
 
-  const [query, setQuery]           = useState('');
-  const [category, setCategory]     = useState('');
-  const [tags, setTags]             = useState<string[]>([]);
-  const [onlyNew, setOnlyNew]       = useState(false);
-  const [inStockOnly, setInStockOnly] = useState(false);
+  const [query, setQuery]               = useState('');
+  const [category, setCategory]         = useState('');
+  const [tags, setTags]                 = useState<string[]>([]);
+  const [excludedTags, setExcludedTags] = useState<string[]>([]);
+  const [onlyNew, setOnlyNew]           = useState(false);
+  const [inStockOnly, setInStockOnly]   = useState(false);
 
   const results = useMemo(
-    () => searchProducts(index, { query, category, tags, onlyNew, inStockOnly }),
-    [index, query, category, tags, onlyNew, inStockOnly]
+    () => searchProducts(index, { query, category, tags, excludedTags, onlyNew, inStockOnly }),
+    [index, query, category, tags, excludedTags, onlyNew, inStockOnly]
   );
   const newCount = useMemo(() => countNewProducts(index), [index]);
   const hasResults = results.length > 0;
@@ -218,6 +219,7 @@ export default function Page() {
             query={query}
             category={category}
             tags={tags}
+            excludedTags={excludedTags}
             categories={index.categories}
             allTags={index.tags}
             onlyNew={onlyNew}
@@ -226,12 +228,14 @@ export default function Page() {
             onQuery={setQuery}
             onCategory={setCategory}
             onTagsChange={setTags}
+            onExcludedTagsChange={setExcludedTags}
             onOnlyNew={setOnlyNew}
             onInStockOnly={setInStockOnly}
             onClearAll={() => {
               setQuery('');
               setCategory('');
               setTags([]);
+              setExcludedTags([]);
               setOnlyNew(false);
               setInStockOnly(false);
             }}

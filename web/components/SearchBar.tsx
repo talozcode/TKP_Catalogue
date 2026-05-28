@@ -8,6 +8,7 @@ type Props = {
   query: string;
   category: string;
   tags: string[];
+  excludedTags: string[];
   categories: string[];
   allTags: string[];
   onlyNew: boolean;
@@ -16,6 +17,7 @@ type Props = {
   onQuery: (q: string) => void;
   onCategory: (c: string) => void;
   onTagsChange: (t: string[]) => void;
+  onExcludedTagsChange: (t: string[]) => void;
   onOnlyNew: (v: boolean) => void;
   onInStockOnly: (v: boolean) => void;
   onClearAll: () => void;
@@ -26,6 +28,7 @@ export function SearchBar({
   query,
   category,
   tags,
+  excludedTags,
   categories,
   allTags,
   onlyNew,
@@ -34,12 +37,13 @@ export function SearchBar({
   onQuery,
   onCategory,
   onTagsChange,
+  onExcludedTagsChange,
   onOnlyNew,
   onInStockOnly,
   onClearAll,
   resultCount
 }: Props) {
-  const hasFilter = !!(query || category || tags.length || onlyNew || inStockOnly);
+  const hasFilter = !!(query || category || tags.length || excludedTags.length || onlyNew || inStockOnly);
 
   return (
     <div className="rounded-2xl border border-line bg-white p-3 shadow-card">
@@ -83,6 +87,14 @@ export function SearchBar({
           allTags={allTags}
           selected={tags}
           onChange={onTagsChange}
+          placeholder="All tags"
+        />
+        <TagMultiSelect
+          allTags={allTags}
+          selected={excludedTags}
+          onChange={onExcludedTagsChange}
+          placeholder="Exclude tags…"
+          variant="exclude"
         />
       </div>
 
@@ -107,6 +119,27 @@ export function SearchBar({
                     onClick={() => onTagsChange(tags.filter((x) => x !== t))}
                     className="rounded-full p-0.5 text-muted hover:bg-brandSoft hover:text-brand"
                     aria-label={`Remove tag ${t}`}
+                  >
+                    <X size={10} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          ) : null}
+          {excludedTags.length ? (
+            <div className="flex flex-wrap items-center gap-1">
+              {excludedTags.map((t) => (
+                <span
+                  key={t}
+                  className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] text-red-700"
+                >
+                  <X size={9} className="shrink-0" />
+                  {t}
+                  <button
+                    type="button"
+                    onClick={() => onExcludedTagsChange(excludedTags.filter((x) => x !== t))}
+                    className="rounded-full p-0.5 text-red-400 hover:bg-red-100 hover:text-red-700"
+                    aria-label={`Remove exclusion ${t}`}
                   >
                     <X size={10} />
                   </button>
@@ -168,11 +201,15 @@ export function SearchBar({
 function TagMultiSelect({
   allTags,
   selected,
-  onChange
+  onChange,
+  placeholder = 'All tags',
+  variant = 'include'
 }: {
   allTags: string[];
   selected: string[];
   onChange: (t: string[]) => void;
+  placeholder?: string;
+  variant?: 'include' | 'exclude';
 }) {
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState('');
@@ -208,20 +245,27 @@ function TagMultiSelect({
     }
   }
 
+  const isExclude = variant === 'exclude';
   const label = selected.length === 0
-    ? 'All tags'
+    ? placeholder
     : selected.length === 1
       ? selected[0]
-      : `${selected.length} tags`;
+      : `${selected.length} ${isExclude ? 'excluded' : 'tags'}`;
 
   return (
-    <div ref={ref} className="relative md:w-56">
+    <div ref={ref} className="relative md:w-48">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         className={clsx(
-          'flex h-9 w-full items-center justify-between gap-2 rounded-md border bg-white px-2 text-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30',
-          selected.length ? 'border-brand/40 text-ink' : 'border-line text-ink'
+          'flex h-9 w-full items-center justify-between gap-2 rounded-md border bg-white px-2 text-sm focus:outline-none focus:ring-2',
+          isExclude
+            ? selected.length
+              ? 'border-red-300 text-red-700 focus:border-red-400 focus:ring-red-200'
+              : 'border-line text-muted hover:border-red-300 hover:text-red-600 focus:border-red-400 focus:ring-red-200'
+            : selected.length
+              ? 'border-brand/40 text-ink focus:border-brand focus:ring-brand/30'
+              : 'border-line text-ink focus:border-brand focus:ring-brand/30'
         )}
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -252,8 +296,10 @@ function TagMultiSelect({
                     type="button"
                     onClick={() => toggle(t)}
                     className={clsx(
-                      'flex w-full items-center justify-between gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-brandSoft',
-                      on && 'bg-brandSoft/60 text-brand'
+                      'flex w-full items-center justify-between gap-2 rounded px-2 py-1.5 text-left text-sm',
+                      isExclude
+                        ? on ? 'bg-red-50 text-red-700 hover:bg-red-100' : 'hover:bg-red-50'
+                        : on ? 'bg-brandSoft/60 text-brand hover:bg-brandSoft' : 'hover:bg-brandSoft'
                     )}
                   >
                     <span className="flex items-center gap-2">
@@ -261,7 +307,9 @@ function TagMultiSelect({
                         className={clsx(
                           'flex h-4 w-4 items-center justify-center rounded border',
                           on
-                            ? 'border-brand bg-brand text-white'
+                            ? isExclude
+                              ? 'border-red-500 bg-red-500 text-white'
+                              : 'border-brand bg-brand text-white'
                             : 'border-line bg-white'
                         )}
                       >
@@ -286,7 +334,10 @@ function TagMultiSelect({
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded bg-brand px-3 py-1 font-semibold text-white hover:bg-brandDeep"
+                className={clsx(
+                  'rounded px-3 py-1 font-semibold text-white',
+                  isExclude ? 'bg-red-500 hover:bg-red-600' : 'bg-brand hover:bg-brandDeep'
+                )}
               >
                 Done
               </button>
