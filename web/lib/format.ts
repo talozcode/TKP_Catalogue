@@ -18,3 +18,18 @@ export function applyDiscount(price: number | null, discountPct: number, exclude
   if (excluded || !discountPct) return price;
   return +(price * (1 - discountPct / 100)).toFixed(2);
 }
+
+export type LotEntry = { qty: number; date: string };
+
+export function parseLotExpiry(raw: string): LotEntry[] {
+  if (!raw) return [];
+  return raw
+    .split('|')
+    .map((s) => s.trim())
+    .map((s) => {
+      const m = s.match(/^(\d+)\s*\(([^)]+)\)$/);
+      if (!m) return null;
+      return { qty: parseInt(m[1], 10), date: m[2].trim() };
+    })
+    .filter((e): e is LotEntry => e !== null);
+}

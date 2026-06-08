@@ -1,22 +1,27 @@
 'use client';
-import { Plus, Minus, ImageOff, Sparkles } from 'lucide-react';
+import { Plus, Minus, ImageOff, Sparkles, CalendarDays } from 'lucide-react';
 import { useState } from 'react';
 import clsx from 'clsx';
 import type { Product } from '@/lib/types';
-import { formatMoney } from '@/lib/format';
+import { formatMoney, parseLotExpiry } from '@/lib/format';
 import { isNewProduct } from '@/lib/search';
 import { Badge } from './ui/Badge';
+import type { PriceMode } from './Header';
 
 type Props = {
   product: Product;
   inCatalogue: boolean;
   onAdd: () => void;
   onRemove: () => void;
+  priceMode: PriceMode;
 };
 
-export function ProductCard({ product, inCatalogue, onAdd, onRemove }: Props) {
+export function ProductCard({ product, inCatalogue, onAdd, onRemove, priceMode }: Props) {
   const [imgError, setImgError] = useState(false);
   const isNew = isNewProduct(product);
+  const lots = parseLotExpiry(product.lotExpiry);
+  const displayPrice = priceMode === 'wholesale' ? product.wholesalePrice : product.salesPrice;
+
   return (
     <div
       className={clsx(
@@ -58,6 +63,22 @@ export function ProductCard({ product, inCatalogue, onAdd, onRemove }: Props) {
             {product.actualAvailableQty}
           </span>
         ) : null}
+        {lots.length > 0 ? (
+          <span className="group/expiry absolute bottom-2 right-2">
+            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/90 shadow-sm">
+              <CalendarDays size={11} className="text-muted" />
+            </span>
+            <div className="absolute bottom-full right-0 z-20 mb-1.5 hidden min-w-[148px] rounded-lg border border-line bg-white p-2 shadow-cardHover group-hover/expiry:block">
+              <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted">Expiry</div>
+              {lots.map((l, i) => (
+                <div key={`${l.date}-${l.qty}-${i}`} className="flex items-center justify-between gap-3 text-[11px] tabular-nums text-ink">
+                  <span className="font-semibold">{l.qty}</span>
+                  <span className="text-muted">{l.date}</span>
+                </div>
+              ))}
+            </div>
+          </span>
+        ) : null}
         <button
           onClick={inCatalogue ? onRemove : onAdd}
           className={clsx(
@@ -81,12 +102,15 @@ export function ProductCard({ product, inCatalogue, onAdd, onRemove }: Props) {
         </div>
         <div className="mt-1 flex items-center justify-between gap-2">
           <span className="text-sm font-semibold text-brand tabular-nums">
-            {formatMoney(product.salesPrice)}
+            {formatMoney(displayPrice)}
           </span>
           {product.productCategory ? (
             <Badge tone="gold">{product.productCategory}</Badge>
           ) : null}
         </div>
+        {product.packaging ? (
+          <div className="text-[11px] text-muted">{product.packaging}</div>
+        ) : null}
       </div>
     </div>
   );

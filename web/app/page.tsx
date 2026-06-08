@@ -16,7 +16,7 @@ import { exportToXlsx } from '@/lib/export-xlsx';
 import { exportToPdf } from '@/lib/export-pdf';
 import { displayCatalogueName } from '@/lib/catalogue-name';
 
-import { Header } from '@/components/Header';
+import { Header, type PriceMode } from '@/components/Header';
 import { SearchBar } from '@/components/SearchBar';
 import { ProductGrid } from '@/components/ProductGrid';
 import { CataloguePane, PaneTab } from '@/components/CataloguePane';
@@ -45,6 +45,8 @@ export default function Page() {
     for (const p of products) m.set(p.key, p);
     return m;
   }, [products]);
+
+  const [priceMode, setPriceMode] = useState<PriceMode>('wholesale');
 
   const [query, setQuery]               = useState('');
   const [category, setCategory]         = useState('');
@@ -213,6 +215,8 @@ export default function Page() {
         productCount={products.length}
         catalogueCount={items.length}
         onOpenCatalogue={() => setDrawerOpen(true)}
+        priceMode={priceMode}
+        onTogglePriceMode={() => setPriceMode((m) => m === 'wholesale' ? 'retail' : 'wholesale')}
       />
       <main className="mx-auto max-w-screen-2xl px-4 py-5 md:px-6">
         <section className="space-y-3">
@@ -280,6 +284,7 @@ export default function Page() {
               inCatalogueKeys={itemKeys}
               onAdd={(k) => addProduct(k, 'search')}
               onRemove={(k) => removeProduct(k)}
+              priceMode={priceMode}
             />
           )}
         </section>

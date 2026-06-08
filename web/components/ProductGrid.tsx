@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import type { Product } from '@/lib/types';
+import type { PriceMode } from './Header';
 import { ProductCard } from './ProductCard';
 
 type Props = {
@@ -8,13 +9,14 @@ type Props = {
   inCatalogueKeys: Set<string>;
   onAdd: (key: string) => void;
   onRemove: (key: string) => void;
+  priceMode: PriceMode;
 };
 
 const PAGE = 60;
 
 // Simple paged rendering — keeps the DOM light even with thousands of results.
 // (Could swap in react-virtual later if grids grow much larger.)
-export function ProductGrid({ products, inCatalogueKeys, onAdd, onRemove }: Props) {
+export function ProductGrid({ products, inCatalogueKeys, onAdd, onRemove, priceMode }: Props) {
   const [count, setCount] = useState(PAGE);
   const visible = products.slice(0, count);
   const hasMore = products.length > count;
@@ -37,6 +39,7 @@ export function ProductGrid({ products, inCatalogueKeys, onAdd, onRemove }: Prop
             inCatalogue={inCatalogueKeys.has(p.key)}
             onAdd={() => onAdd(p.key)}
             onRemove={() => onRemove(p.key)}
+            priceMode={priceMode}
           />
         ))}
       </div>

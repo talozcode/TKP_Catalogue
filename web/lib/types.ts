@@ -19,6 +19,7 @@ export type Product = {
   wholesalePrice: number | null;
   imageUrl: string;
   actualAvailableQty: number | null;
+  lotExpiry: string;
 };
 
 export type GetProductsResponse = {

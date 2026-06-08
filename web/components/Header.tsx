@@ -7,18 +7,24 @@ import { formatDate } from '@/lib/format';
 const LOGO_URL =
   'https://res.cloudinary.com/dakhwegyt/image/upload/v1776678465/kp-primary_4x_totp25.png';
 
+export type PriceMode = 'wholesale' | 'retail';
+
 type Props = {
   lastSyncedAt: string | null;
   productCount: number;
   catalogueCount: number;
   onOpenCatalogue: () => void;
+  priceMode: PriceMode;
+  onTogglePriceMode: () => void;
 };
 
 export function Header({
   lastSyncedAt,
   productCount,
   catalogueCount,
-  onOpenCatalogue
+  onOpenCatalogue,
+  priceMode,
+  onTogglePriceMode
 }: Props) {
   const router = useRouter();
 
@@ -57,6 +63,16 @@ export function Header({
               <div>Last sync {formatDate(lastSyncedAt)}</div>
             ) : null}
           </div>
+
+          <button
+            onClick={onTogglePriceMode}
+            className="hidden items-center gap-1 rounded-full border border-line bg-white px-3 py-1.5 text-xs font-semibold text-ink shadow-sm transition hover:border-brand/40 hover:text-brand sm:inline-flex"
+            title={priceMode === 'wholesale' ? 'Switch to retail price' : 'Switch to wholesale price'}
+          >
+            <span className={clsx(priceMode === 'wholesale' ? 'text-brand' : 'text-muted')}>WS</span>
+            <span className="text-line">/</span>
+            <span className={clsx(priceMode === 'retail' ? 'text-brand' : 'text-muted')}>Retail</span>
+          </button>
 
           <button
             onClick={logout}

@@ -126,7 +126,8 @@ function mapProduct(r: Record<string, unknown>): Product {
     salesPrice: num(r['Sales Price']),
     wholesalePrice: num(r['Wholesale Price']),
     imageUrl: str(r['Image URL']),
-    actualAvailableQty: num(r['Actual Available Qty'])
+    actualAvailableQty: num(r['Actual Available Qty']),
+    lotExpiry: str(r['Lot Qty / Expiry Date'])
   };
 }
 
