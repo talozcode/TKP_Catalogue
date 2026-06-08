@@ -69,9 +69,9 @@ export function ProductCard({ product, inCatalogue, onAdd, onRemove, priceMode }
               <CalendarDays size={11} className="text-muted" />
             </span>
             <div className="absolute bottom-full right-0 z-20 mb-1.5 hidden min-w-[148px] rounded-lg border border-line bg-white p-2 shadow-cardHover group-hover/expiry:block">
-              <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted">Expiry</div>
+              <div className="mb-1 text-[12px] font-semibold uppercase tracking-wide text-muted">Expiry</div>
               {lots.map((l, i) => (
-                <div key={`${l.date}-${l.qty}-${i}`} className="flex items-center justify-between gap-3 text-[11px] tabular-nums text-ink">
+                <div key={`${l.date}-${l.qty}-${i}`} className="flex items-center justify-between gap-3 text-[13px] tabular-nums text-ink">
                   <span className="font-semibold">{l.qty}</span>
                   <span className="text-muted">{l.date}</span>
                 </div>
