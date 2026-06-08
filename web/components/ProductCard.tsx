@@ -109,7 +109,7 @@ export function ProductCard({ product, inCatalogue, onAdd, onRemove, priceMode }
           ) : null}
         </div>
         {product.packaging ? (
-          <div className="text-[13px] text-muted">{product.packaging}</div>
+          <div className="text-[13px] font-semibold text-muted">{product.packaging}</div>
         ) : null}
       </div>
     </div>
