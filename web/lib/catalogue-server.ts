@@ -21,6 +21,7 @@ import type {
   CatalogueSummary,
   ColumnKey,
   ColumnsVisibility,
+  DiscountBase,
   ExportMode,
   GetProductsResponse,
   LoadCatalogueResponse,
@@ -196,6 +197,7 @@ export async function loadCatalogue(catalogueId: string): Promise<LoadCatalogueR
   let columnsVisibility: ColumnsVisibility = {};
   let columnsOrder: ColumnKey[] = [];
   let titleDate = '';
+  let discountBase: DiscountBase = 'retail';
   if (meta.columns_visibility_json) {
     try {
       const parsed = JSON.parse(String(meta.columns_visibility_json));
@@ -204,6 +206,7 @@ export async function loadCatalogue(catalogueId: string): Promise<LoadCatalogueR
         columnsVisibility = (parsed.visibility as ColumnsVisibility) || {};
         columnsOrder = Array.isArray(parsed.order) ? (parsed.order as ColumnKey[]) : [];
         titleDate = typeof parsed.titleDate === 'string' ? parsed.titleDate : '';
+        discountBase = (parsed.discountBase === 'wholesale' ? 'wholesale' : 'retail') as DiscountBase;
       } else {
         columnsVisibility = parsed as ColumnsVisibility;
       }
@@ -219,6 +222,7 @@ export async function loadCatalogue(catalogueId: string): Promise<LoadCatalogueR
     titleDate,
     defaultDiscountPercent: num(meta.default_discount_percent) || 0,
     showDiscountColumn: truthy(meta.show_discount_column),
+    discountBase,
     exportMode: (str(meta.export_mode) || 'customer') as ExportMode,
     columnsVisibility,
     columnsOrder,
@@ -266,7 +270,8 @@ export async function saveCatalogue(
     columns_visibility_json: JSON.stringify({
       visibility: c.columnsVisibility || {},
       order: c.columnsOrder || [],
-      titleDate: c.titleDate || ''
+      titleDate: c.titleDate || '',
+      discountBase: c.discountBase || 'retail'
     }),
     created_at:
       rowIndex >= 0 && existing[rowIndex].created_at

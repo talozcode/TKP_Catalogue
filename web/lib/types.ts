@@ -75,6 +75,8 @@ export type ColumnKey =
 
 export type ColumnsVisibility = Partial<Record<ColumnKey, boolean>>;
 
+export type DiscountBase = 'retail' | 'wholesale';
+
 export type Catalogue = {
   catalogueId: string;
   catalogueName: string;
@@ -82,6 +84,7 @@ export type Catalogue = {
   titleDate: string;
   defaultDiscountPercent: number;
   showDiscountColumn: boolean;
+  discountBase: DiscountBase;
   exportMode: ExportMode;
   columnsVisibility: ColumnsVisibility;
   columnsOrder: ColumnKey[];

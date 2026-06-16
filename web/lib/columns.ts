@@ -1,6 +1,7 @@
 import type {
   CatalogueItem,
   ColumnsVisibility,
+  DiscountBase,
   ExportMode,
   Product
 } from './types';
@@ -95,11 +96,13 @@ export type CellContext = {
   product: Product | undefined;
   item: CatalogueItem;
   defaultDiscountPercent: number;
+  discountBase?: DiscountBase;
 };
 
 export function cellText(col: ColumnId, ctx: CellContext): string {
-  const { product: p, item: it, defaultDiscountPercent } = ctx;
+  const { product: p, item: it, defaultDiscountPercent, discountBase } = ctx;
   if (!p) return col === 'productName' ? `Missing: ${it.productKey}` : '';
+  const basePrice = discountBase === 'wholesale' ? p.wholesalePrice : p.salesPrice;
   switch (col) {
     case 'image':             return p.imageUrl || '';
     case 'internalReference': return p.internalReference;
@@ -113,19 +116,20 @@ export function cellText(col: ColumnId, ctx: CellContext): string {
     case 'salesPrice':        return formatMoney(p.salesPrice);
     case 'wholesalePrice':    return formatMoney(p.wholesalePrice);
     case 'discount':          return it.excludedFromDiscount ? '—' : `${defaultDiscountPercent}%`;
-    case 'finalPrice':        return formatMoney(applyDiscount(p.salesPrice, defaultDiscountPercent, it.excludedFromDiscount));
+    case 'finalPrice':        return formatMoney(applyDiscount(basePrice, defaultDiscountPercent, it.excludedFromDiscount));
     case 'note':              return it.customNote;
   }
 }
 
 export function cellRaw(col: ColumnId, ctx: CellContext): string | number | null {
-  const { product: p, item: it, defaultDiscountPercent } = ctx;
+  const { product: p, item: it, defaultDiscountPercent, discountBase } = ctx;
   if (!p) return col === 'productName' ? `Missing: ${it.productKey}` : '';
+  const basePrice = discountBase === 'wholesale' ? p.wholesalePrice : p.salesPrice;
   switch (col) {
     case 'salesPrice':     return p.salesPrice ?? '';
     case 'wholesalePrice': return p.wholesalePrice ?? '';
     case 'discount':       return it.excludedFromDiscount ? 0 : defaultDiscountPercent;
-    case 'finalPrice':     return applyDiscount(p.salesPrice, defaultDiscountPercent, it.excludedFromDiscount) ?? '';
+    case 'finalPrice':     return applyDiscount(basePrice, defaultDiscountPercent, it.excludedFromDiscount) ?? '';
     default:               return cellText(col, ctx);
   }
 }

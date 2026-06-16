@@ -7,6 +7,7 @@ import type {
   CatalogueSource,
   ColumnKey,
   ColumnsVisibility,
+  DiscountBase,
   ExportMode
 } from './types';
 import { DEFAULT_COLUMN_ORDER, normalizeColumnOrder } from './columns';
@@ -21,6 +22,7 @@ type CatalogueState = {
   titleDate: string;
   defaultDiscountPercent: number;
   showDiscountColumn: boolean;
+  discountBase: DiscountBase;
   exportMode: ExportMode;
   columnsVisibility: ColumnsVisibility;
   columnsOrder: ColumnKey[];
@@ -28,7 +30,7 @@ type CatalogueState = {
   sources: CatalogueSource[];
 
   // mutations
-  setMeta: (m: Partial<Pick<Catalogue, 'catalogueName' | 'notes' | 'titleDate' | 'defaultDiscountPercent' | 'showDiscountColumn' | 'exportMode' | 'columnsVisibility' | 'columnsOrder'>>) => void;
+  setMeta: (m: Partial<Pick<Catalogue, 'catalogueName' | 'notes' | 'titleDate' | 'defaultDiscountPercent' | 'showDiscountColumn' | 'discountBase' | 'exportMode' | 'columnsVisibility' | 'columnsOrder'>>) => void;
   addProduct: (productKey: string, source: AddedBySource) => void;
   addManyProducts: (keys: string[], source: AddedBySource) => void;
   removeProduct: (productKey: string) => void;
@@ -70,6 +72,7 @@ function emptyState() {
     titleDate: '',
     defaultDiscountPercent: 0,
     showDiscountColumn: false,
+    discountBase: 'retail' as DiscountBase,
     exportMode: 'customer' as ExportMode,
     columnsVisibility: { ...DEFAULT_COLUMNS },
     columnsOrder: [...DEFAULT_COLUMN_ORDER] as ColumnKey[],
@@ -214,6 +217,7 @@ export const useCatalogue = create<CatalogueState>()(
           titleDate: catalogue.titleDate || '',
           defaultDiscountPercent: catalogue.defaultDiscountPercent,
           showDiscountColumn: catalogue.showDiscountColumn,
+          discountBase: catalogue.discountBase || 'retail',
           exportMode: catalogue.exportMode,
           columnsVisibility: { ...DEFAULT_COLUMNS, ...(catalogue.columnsVisibility || {}) },
           columnsOrder: normalizeColumnOrder(catalogue.columnsOrder) as ColumnKey[],
@@ -234,6 +238,7 @@ export const useCatalogue = create<CatalogueState>()(
         titleDate: s.titleDate,
         defaultDiscountPercent: s.defaultDiscountPercent,
         showDiscountColumn: s.showDiscountColumn,
+        discountBase: s.discountBase,
         exportMode: s.exportMode,
         columnsVisibility: s.columnsVisibility,
         columnsOrder: s.columnsOrder,
