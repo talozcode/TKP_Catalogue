@@ -96,6 +96,7 @@ type ExportArgs = {
   defaultDiscountPercent: number;
   showDiscountColumn: boolean;
   discountBase: DiscountBase;
+  removeVatFromWholesale: boolean;
   columns: ColumnsVisibility;
   columnsOrder: ColumnKey[];
   exportMode: ExportMode;
@@ -216,7 +217,8 @@ export async function exportToPdf(args: ExportArgs) {
         product: p,
         item: it,
         defaultDiscountPercent: args.defaultDiscountPercent,
-        discountBase: args.discountBase
+        discountBase: args.discountBase,
+        removeVatFromWholesale: args.removeVatFromWholesale
       });
     });
   });
@@ -430,6 +432,15 @@ function drawDocHeader(
       top + 36
     );
     bottom = Math.max(bottom, top + 42);
+  }
+
+  if (args.removeVatFromWholesale) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(MUTED[0], MUTED[1], MUTED[2]);
+    const vatY = bottom > top + 30 ? bottom + 4 : top + 36;
+    doc.text('WHOLESALE EXCL. VAT (7%)', titleX, vatY);
+    bottom = Math.max(bottom, vatY + 6);
   }
 
   if (args.notes) {

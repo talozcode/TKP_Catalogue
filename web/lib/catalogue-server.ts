@@ -198,6 +198,7 @@ export async function loadCatalogue(catalogueId: string): Promise<LoadCatalogueR
   let columnsOrder: ColumnKey[] = [];
   let titleDate = '';
   let discountBase: DiscountBase = 'retail';
+  let removeVatFromWholesale = false;
   if (meta.columns_visibility_json) {
     try {
       const parsed = JSON.parse(String(meta.columns_visibility_json));
@@ -207,6 +208,7 @@ export async function loadCatalogue(catalogueId: string): Promise<LoadCatalogueR
         columnsOrder = Array.isArray(parsed.order) ? (parsed.order as ColumnKey[]) : [];
         titleDate = typeof parsed.titleDate === 'string' ? parsed.titleDate : '';
         discountBase = (parsed.discountBase === 'wholesale' ? 'wholesale' : 'retail') as DiscountBase;
+        removeVatFromWholesale = parsed.removeVatFromWholesale === true;
       } else {
         columnsVisibility = parsed as ColumnsVisibility;
       }
@@ -223,6 +225,7 @@ export async function loadCatalogue(catalogueId: string): Promise<LoadCatalogueR
     defaultDiscountPercent: num(meta.default_discount_percent) || 0,
     showDiscountColumn: truthy(meta.show_discount_column),
     discountBase,
+    removeVatFromWholesale,
     exportMode: (str(meta.export_mode) || 'customer') as ExportMode,
     columnsVisibility,
     columnsOrder,
@@ -271,7 +274,8 @@ export async function saveCatalogue(
       visibility: c.columnsVisibility || {},
       order: c.columnsOrder || [],
       titleDate: c.titleDate || '',
-      discountBase: c.discountBase || 'retail'
+      discountBase: c.discountBase || 'retail',
+      removeVatFromWholesale: !!c.removeVatFromWholesale
     }),
     created_at:
       rowIndex >= 0 && existing[rowIndex].created_at

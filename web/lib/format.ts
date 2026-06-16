@@ -19,6 +19,14 @@ export function applyDiscount(price: number | null, discountPct: number, exclude
   return +(price * (1 - discountPct / 100)).toFixed(2);
 }
 
+// Thailand VAT. Wholesale prices in the sheet are VAT-inclusive; exVat strips it.
+export const VAT_RATE = 0.07;
+
+export function exVat(price: number | null): number | null {
+  if (price == null) return null;
+  return +(price / (1 + VAT_RATE)).toFixed(2);
+}
+
 export type LotEntry = { qty: number; date: string };
 
 export function parseLotExpiry(raw: string): LotEntry[] {

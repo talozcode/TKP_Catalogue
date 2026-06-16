@@ -5,7 +5,7 @@ import type {
   ExportMode,
   Product
 } from './types';
-import { applyDiscount, formatMoney } from './format';
+import { applyDiscount, exVat, formatMoney } from './format';
 
 export type ColumnId =
   | 'image'
@@ -97,12 +97,14 @@ export type CellContext = {
   item: CatalogueItem;
   defaultDiscountPercent: number;
   discountBase?: DiscountBase;
+  removeVatFromWholesale?: boolean;
 };
 
 export function cellText(col: ColumnId, ctx: CellContext): string {
-  const { product: p, item: it, defaultDiscountPercent, discountBase } = ctx;
+  const { product: p, item: it, defaultDiscountPercent, discountBase, removeVatFromWholesale } = ctx;
   if (!p) return col === 'productName' ? `Missing: ${it.productKey}` : '';
-  const basePrice = discountBase === 'wholesale' ? p.wholesalePrice : p.salesPrice;
+  const wholesale = removeVatFromWholesale ? exVat(p.wholesalePrice) : p.wholesalePrice;
+  const basePrice = discountBase === 'wholesale' ? wholesale : p.salesPrice;
   switch (col) {
     case 'image':             return p.imageUrl || '';
     case 'internalReference': return p.internalReference;
@@ -114,7 +116,7 @@ export function cellText(col: ColumnId, ctx: CellContext): string {
     case 'category':          return p.productCategory;
     case 'tags':              return p.tags.join(', ');
     case 'salesPrice':        return formatMoney(p.salesPrice);
-    case 'wholesalePrice':    return formatMoney(p.wholesalePrice);
+    case 'wholesalePrice':    return formatMoney(wholesale);
     case 'discount':          return it.excludedFromDiscount ? '—' : `${defaultDiscountPercent}%`;
     case 'finalPrice':        return formatMoney(applyDiscount(basePrice, defaultDiscountPercent, it.excludedFromDiscount));
     case 'note':              return it.customNote;
@@ -122,12 +124,13 @@ export function cellText(col: ColumnId, ctx: CellContext): string {
 }
 
 export function cellRaw(col: ColumnId, ctx: CellContext): string | number | null {
-  const { product: p, item: it, defaultDiscountPercent, discountBase } = ctx;
+  const { product: p, item: it, defaultDiscountPercent, discountBase, removeVatFromWholesale } = ctx;
   if (!p) return col === 'productName' ? `Missing: ${it.productKey}` : '';
-  const basePrice = discountBase === 'wholesale' ? p.wholesalePrice : p.salesPrice;
+  const wholesale = removeVatFromWholesale ? exVat(p.wholesalePrice) : p.wholesalePrice;
+  const basePrice = discountBase === 'wholesale' ? wholesale : p.salesPrice;
   switch (col) {
     case 'salesPrice':     return p.salesPrice ?? '';
-    case 'wholesalePrice': return p.wholesalePrice ?? '';
+    case 'wholesalePrice': return wholesale ?? '';
     case 'discount':       return it.excludedFromDiscount ? 0 : defaultDiscountPercent;
     case 'finalPrice':     return applyDiscount(basePrice, defaultDiscountPercent, it.excludedFromDiscount) ?? '';
     default:               return cellText(col, ctx);

@@ -41,6 +41,7 @@ export function CatalogueToolbar({
   const discountPct    = useCatalogue((s) => s.defaultDiscountPercent);
   const showDiscount   = useCatalogue((s) => s.showDiscountColumn);
   const discountBase   = useCatalogue((s) => s.discountBase);
+  const removeVat      = useCatalogue((s) => s.removeVatFromWholesale);
   const exportMode     = useCatalogue((s) => s.exportMode);
   const columns        = useCatalogue((s) => s.columnsVisibility);
   const columnsOrder   = useCatalogue((s) => s.columnsOrder);
@@ -222,6 +223,22 @@ export function CatalogueToolbar({
             </Field>
           </div>
         ) : null}
+
+        <div className="mt-3">
+          <label
+            htmlFor="t-remove-vat"
+            className="flex cursor-pointer items-center gap-2 rounded-md border border-line bg-white px-3 py-2 text-sm hover:border-brand/30"
+          >
+            <input
+              id="t-remove-vat"
+              type="checkbox"
+              checked={removeVat}
+              onChange={(e) => setMeta({ removeVatFromWholesale: e.target.checked })}
+              className="h-4 w-4 accent-brand"
+            />
+            Show wholesale prices excluding VAT (7%)
+          </label>
+        </div>
       </section>
 
       {/* Storage */}

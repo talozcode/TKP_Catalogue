@@ -10,6 +10,7 @@ type ExportArgs = {
   defaultDiscountPercent: number;
   showDiscountColumn: boolean;
   discountBase: DiscountBase;
+  removeVatFromWholesale: boolean;
   columns: ColumnsVisibility;
   columnsOrder: ColumnKey[];
   exportMode: ExportMode;
@@ -30,7 +31,8 @@ export function exportToXlsx(args: ExportArgs) {
       product,
       item: it,
       defaultDiscountPercent: args.defaultDiscountPercent,
-      discountBase: args.discountBase
+      discountBase: args.discountBase,
+      removeVatFromWholesale: args.removeVatFromWholesale
     };
     return cols.map((c) => cellRaw(c.id, ctx));
   });

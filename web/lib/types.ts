@@ -85,6 +85,7 @@ export type Catalogue = {
   defaultDiscountPercent: number;
   showDiscountColumn: boolean;
   discountBase: DiscountBase;
+  removeVatFromWholesale: boolean;
   exportMode: ExportMode;
   columnsVisibility: ColumnsVisibility;
   columnsOrder: ColumnKey[];

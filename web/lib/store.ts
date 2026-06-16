@@ -23,6 +23,7 @@ type CatalogueState = {
   defaultDiscountPercent: number;
   showDiscountColumn: boolean;
   discountBase: DiscountBase;
+  removeVatFromWholesale: boolean;
   exportMode: ExportMode;
   columnsVisibility: ColumnsVisibility;
   columnsOrder: ColumnKey[];
@@ -30,7 +31,7 @@ type CatalogueState = {
   sources: CatalogueSource[];
 
   // mutations
-  setMeta: (m: Partial<Pick<Catalogue, 'catalogueName' | 'notes' | 'titleDate' | 'defaultDiscountPercent' | 'showDiscountColumn' | 'discountBase' | 'exportMode' | 'columnsVisibility' | 'columnsOrder'>>) => void;
+  setMeta: (m: Partial<Pick<Catalogue, 'catalogueName' | 'notes' | 'titleDate' | 'defaultDiscountPercent' | 'showDiscountColumn' | 'discountBase' | 'removeVatFromWholesale' | 'exportMode' | 'columnsVisibility' | 'columnsOrder'>>) => void;
   addProduct: (productKey: string, source: AddedBySource) => void;
   addManyProducts: (keys: string[], source: AddedBySource) => void;
   removeProduct: (productKey: string) => void;
@@ -73,6 +74,7 @@ function emptyState() {
     defaultDiscountPercent: 0,
     showDiscountColumn: false,
     discountBase: 'retail' as DiscountBase,
+    removeVatFromWholesale: false,
     exportMode: 'customer' as ExportMode,
     columnsVisibility: { ...DEFAULT_COLUMNS },
     columnsOrder: [...DEFAULT_COLUMN_ORDER] as ColumnKey[],
@@ -218,6 +220,7 @@ export const useCatalogue = create<CatalogueState>()(
           defaultDiscountPercent: catalogue.defaultDiscountPercent,
           showDiscountColumn: catalogue.showDiscountColumn,
           discountBase: catalogue.discountBase || 'retail',
+          removeVatFromWholesale: catalogue.removeVatFromWholesale || false,
           exportMode: catalogue.exportMode,
           columnsVisibility: { ...DEFAULT_COLUMNS, ...(catalogue.columnsVisibility || {}) },
           columnsOrder: normalizeColumnOrder(catalogue.columnsOrder) as ColumnKey[],
@@ -239,6 +242,7 @@ export const useCatalogue = create<CatalogueState>()(
         defaultDiscountPercent: s.defaultDiscountPercent,
         showDiscountColumn: s.showDiscountColumn,
         discountBase: s.discountBase,
+        removeVatFromWholesale: s.removeVatFromWholesale,
         exportMode: s.exportMode,
         columnsVisibility: s.columnsVisibility,
         columnsOrder: s.columnsOrder,

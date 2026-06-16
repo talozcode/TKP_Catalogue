@@ -14,6 +14,7 @@ type Props = {
   defaultDiscountPercent: number;
   showDiscountColumn: boolean;
   discountBase: DiscountBase;
+  removeVatFromWholesale: boolean;
   columns: ColumnsVisibility;
   columnsOrder: ColumnKey[];
   exportMode: ExportMode;
@@ -28,6 +29,7 @@ export function CataloguePreview({
   defaultDiscountPercent,
   showDiscountColumn,
   discountBase,
+  removeVatFromWholesale,
   columns,
   columnsOrder,
   exportMode
@@ -65,6 +67,11 @@ export function CataloguePreview({
         {showDiscountColumn && defaultDiscountPercent > 0 ? (
           <div className="mt-2 text-[11px] uppercase tracking-wider text-gold">
             {defaultDiscountPercent}% off {discountBase === 'wholesale' ? 'wholesale' : 'retail'}
+          </div>
+        ) : null}
+        {removeVatFromWholesale ? (
+          <div className="mt-1 text-[11px] uppercase tracking-wider text-muted">
+            Wholesale excl. VAT (7%)
           </div>
         ) : null}
       </div>
@@ -122,7 +129,8 @@ export function CataloguePreview({
                       product,
                       item: it,
                       defaultDiscountPercent,
-                      discountBase
+                      discountBase,
+                      removeVatFromWholesale
                     });
                     return (
                       <td

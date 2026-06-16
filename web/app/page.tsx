@@ -80,6 +80,7 @@ export default function Page() {
   const discountPct           = useCatalogue((s) => s.defaultDiscountPercent);
   const showDiscount          = useCatalogue((s) => s.showDiscountColumn);
   const discountBase          = useCatalogue((s) => s.discountBase);
+  const removeVatFromWholesale = useCatalogue((s) => s.removeVatFromWholesale);
   const exportMode            = useCatalogue((s) => s.exportMode);
   const columnsVisibility     = useCatalogue((s) => s.columnsVisibility);
   const columnsOrder          = useCatalogue((s) => s.columnsOrder);
@@ -107,6 +108,7 @@ export default function Page() {
           defaultDiscountPercent: s.defaultDiscountPercent,
           showDiscountColumn: s.showDiscountColumn,
           discountBase: s.discountBase,
+          removeVatFromWholesale: s.removeVatFromWholesale,
           exportMode: s.exportMode,
           columnsVisibility: s.columnsVisibility,
           columnsOrder: s.columnsOrder
@@ -184,6 +186,7 @@ export default function Page() {
       defaultDiscountPercent: s.defaultDiscountPercent,
       showDiscountColumn: s.showDiscountColumn,
       discountBase: s.discountBase,
+      removeVatFromWholesale: s.removeVatFromWholesale,
       columns: s.columnsVisibility,
       columnsOrder: s.columnsOrder,
       exportMode: s.exportMode
@@ -202,6 +205,7 @@ export default function Page() {
         defaultDiscountPercent: s.defaultDiscountPercent,
         showDiscountColumn: s.showDiscountColumn,
         discountBase: s.discountBase,
+        removeVatFromWholesale: s.removeVatFromWholesale,
         columns: s.columnsVisibility,
         columnsOrder: s.columnsOrder,
         exportMode: s.exportMode
@@ -311,6 +315,7 @@ export default function Page() {
           defaultDiscountPercent={discountPct}
           showDiscountColumn={showDiscount}
           discountBase={discountBase}
+          removeVatFromWholesale={removeVatFromWholesale}
           columnsVisibility={columnsVisibility}
           columnsOrder={columnsOrder}
           exportMode={exportMode}

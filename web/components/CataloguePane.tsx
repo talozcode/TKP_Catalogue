@@ -27,6 +27,7 @@ type Props = {
   defaultDiscountPercent: number;
   showDiscountColumn: boolean;
   discountBase: DiscountBase;
+  removeVatFromWholesale: boolean;
   columnsVisibility: ColumnsVisibility;
   columnsOrder: ColumnKey[];
   exportMode: ExportMode;
@@ -48,6 +49,7 @@ export function CataloguePane({
   defaultDiscountPercent,
   showDiscountColumn,
   discountBase,
+  removeVatFromWholesale,
   columnsVisibility,
   columnsOrder,
   exportMode,
@@ -90,6 +92,7 @@ export function CataloguePane({
             defaultDiscountPercent={defaultDiscountPercent}
             showDiscountColumn={showDiscountColumn}
             discountBase={discountBase}
+            removeVatFromWholesale={removeVatFromWholesale}
             columns={columnsVisibility}
             columnsOrder={columnsOrder}
             exportMode={exportMode}
