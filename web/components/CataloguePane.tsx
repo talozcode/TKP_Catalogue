@@ -6,6 +6,7 @@ import type {
   CatalogueItem,
   ColumnKey,
   ColumnsVisibility,
+  DiscountBase,
   ExportMode,
   Product
 } from '@/lib/types';
@@ -25,6 +26,7 @@ type Props = {
   notes: string;
   defaultDiscountPercent: number;
   showDiscountColumn: boolean;
+  discountBase: DiscountBase;
   columnsVisibility: ColumnsVisibility;
   columnsOrder: ColumnKey[];
   exportMode: ExportMode;
@@ -45,6 +47,7 @@ export function CataloguePane({
   notes,
   defaultDiscountPercent,
   showDiscountColumn,
+  discountBase,
   columnsVisibility,
   columnsOrder,
   exportMode,
@@ -86,6 +89,7 @@ export function CataloguePane({
             productByKey={productByKey}
             defaultDiscountPercent={defaultDiscountPercent}
             showDiscountColumn={showDiscountColumn}
+            discountBase={discountBase}
             columns={columnsVisibility}
             columnsOrder={columnsOrder}
             exportMode={exportMode}

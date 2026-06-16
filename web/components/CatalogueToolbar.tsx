@@ -40,6 +40,7 @@ export function CatalogueToolbar({
   const titleDate      = useCatalogue((s) => s.titleDate);
   const discountPct    = useCatalogue((s) => s.defaultDiscountPercent);
   const showDiscount   = useCatalogue((s) => s.showDiscountColumn);
+  const discountBase   = useCatalogue((s) => s.discountBase);
   const exportMode     = useCatalogue((s) => s.exportMode);
   const columns        = useCatalogue((s) => s.columnsVisibility);
   const columnsOrder   = useCatalogue((s) => s.columnsOrder);
@@ -197,6 +198,30 @@ export function CatalogueToolbar({
             </label>
           </Field>
         </div>
+
+        {showDiscount ? (
+          <div className="mt-3">
+            <Field label="Discount from">
+              <div className="flex h-9 overflow-hidden rounded-md border border-line bg-white text-sm">
+                <button
+                  type="button"
+                  onClick={() => setMeta({ discountBase: 'retail' })}
+                  className={`flex-1 px-3 transition ${discountBase === 'retail' ? 'bg-brand font-semibold text-white' : 'text-ink hover:bg-brandSoft'}`}
+                >
+                  Retail
+                </button>
+                <span className="w-px bg-line" />
+                <button
+                  type="button"
+                  onClick={() => setMeta({ discountBase: 'wholesale' })}
+                  className={`flex-1 px-3 transition ${discountBase === 'wholesale' ? 'bg-brand font-semibold text-white' : 'text-ink hover:bg-brandSoft'}`}
+                >
+                  Wholesale
+                </button>
+              </div>
+            </Field>
+          </div>
+        ) : null}
       </section>
 
       {/* Storage */}

@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import type { CatalogueItem, ColumnKey, ColumnsVisibility, ExportMode, Product } from './types';
+import type { CatalogueItem, ColumnKey, ColumnsVisibility, DiscountBase, ExportMode, Product } from './types';
 import { resolveColumns, cellRaw } from './columns';
 import { fileBaseName } from './catalogue-name';
 
@@ -9,6 +9,7 @@ type ExportArgs = {
   productByKey: Map<string, Product>;
   defaultDiscountPercent: number;
   showDiscountColumn: boolean;
+  discountBase: DiscountBase;
   columns: ColumnsVisibility;
   columnsOrder: ColumnKey[];
   exportMode: ExportMode;
@@ -28,7 +29,8 @@ export function exportToXlsx(args: ExportArgs) {
     const ctx = {
       product,
       item: it,
-      defaultDiscountPercent: args.defaultDiscountPercent
+      defaultDiscountPercent: args.defaultDiscountPercent,
+      discountBase: args.discountBase
     };
     return cols.map((c) => cellRaw(c.id, ctx));
   });

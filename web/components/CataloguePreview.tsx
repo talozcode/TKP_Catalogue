@@ -1,7 +1,7 @@
 'use client';
 import { ImageOff } from 'lucide-react';
 import clsx from 'clsx';
-import type { CatalogueItem, ColumnKey, ColumnsVisibility, ExportMode, Product } from '@/lib/types';
+import type { CatalogueItem, ColumnKey, ColumnsVisibility, DiscountBase, ExportMode, Product } from '@/lib/types';
 import { resolveColumns, cellText } from '@/lib/columns';
 import { displayCatalogueName } from '@/lib/catalogue-name';
 
@@ -13,6 +13,7 @@ type Props = {
   productByKey: Map<string, Product>;
   defaultDiscountPercent: number;
   showDiscountColumn: boolean;
+  discountBase: DiscountBase;
   columns: ColumnsVisibility;
   columnsOrder: ColumnKey[];
   exportMode: ExportMode;
@@ -26,6 +27,7 @@ export function CataloguePreview({
   productByKey,
   defaultDiscountPercent,
   showDiscountColumn,
+  discountBase,
   columns,
   columnsOrder,
   exportMode
@@ -62,7 +64,7 @@ export function CataloguePreview({
         ) : null}
         {showDiscountColumn && defaultDiscountPercent > 0 ? (
           <div className="mt-2 text-[11px] uppercase tracking-wider text-gold">
-            {defaultDiscountPercent}% discount
+            {defaultDiscountPercent}% off {discountBase === 'wholesale' ? 'wholesale' : 'retail'}
           </div>
         ) : null}
       </div>
@@ -119,7 +121,8 @@ export function CataloguePreview({
                     const text = cellText(c.id, {
                       product,
                       item: it,
-                      defaultDiscountPercent
+                      defaultDiscountPercent,
+                      discountBase
                     });
                     return (
                       <td

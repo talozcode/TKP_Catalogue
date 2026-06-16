@@ -79,6 +79,7 @@ export default function Page() {
   const titleDate             = useCatalogue((s) => s.titleDate);
   const discountPct           = useCatalogue((s) => s.defaultDiscountPercent);
   const showDiscount          = useCatalogue((s) => s.showDiscountColumn);
+  const discountBase          = useCatalogue((s) => s.discountBase);
   const exportMode            = useCatalogue((s) => s.exportMode);
   const columnsVisibility     = useCatalogue((s) => s.columnsVisibility);
   const columnsOrder          = useCatalogue((s) => s.columnsOrder);
@@ -105,6 +106,7 @@ export default function Page() {
           titleDate: s.titleDate,
           defaultDiscountPercent: s.defaultDiscountPercent,
           showDiscountColumn: s.showDiscountColumn,
+          discountBase: s.discountBase,
           exportMode: s.exportMode,
           columnsVisibility: s.columnsVisibility,
           columnsOrder: s.columnsOrder
@@ -181,6 +183,7 @@ export default function Page() {
       productByKey,
       defaultDiscountPercent: s.defaultDiscountPercent,
       showDiscountColumn: s.showDiscountColumn,
+      discountBase: s.discountBase,
       columns: s.columnsVisibility,
       columnsOrder: s.columnsOrder,
       exportMode: s.exportMode
@@ -198,6 +201,7 @@ export default function Page() {
         productByKey,
         defaultDiscountPercent: s.defaultDiscountPercent,
         showDiscountColumn: s.showDiscountColumn,
+        discountBase: s.discountBase,
         columns: s.columnsVisibility,
         columnsOrder: s.columnsOrder,
         exportMode: s.exportMode
@@ -306,6 +310,7 @@ export default function Page() {
           notes={notes}
           defaultDiscountPercent={discountPct}
           showDiscountColumn={showDiscount}
+          discountBase={discountBase}
           columnsVisibility={columnsVisibility}
           columnsOrder={columnsOrder}
           exportMode={exportMode}

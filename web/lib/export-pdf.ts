@@ -4,6 +4,7 @@ import type {
   CatalogueItem,
   ColumnKey,
   ColumnsVisibility,
+  DiscountBase,
   ExportMode,
   Product
 } from './types';
@@ -94,6 +95,7 @@ type ExportArgs = {
   productByKey: Map<string, Product>;
   defaultDiscountPercent: number;
   showDiscountColumn: boolean;
+  discountBase: DiscountBase;
   columns: ColumnsVisibility;
   columnsOrder: ColumnKey[];
   exportMode: ExportMode;
@@ -213,7 +215,8 @@ export async function exportToPdf(args: ExportArgs) {
       return cellText(c.id, {
         product: p,
         item: it,
-        defaultDiscountPercent: args.defaultDiscountPercent
+        defaultDiscountPercent: args.defaultDiscountPercent,
+        discountBase: args.discountBase
       });
     });
   });
@@ -420,8 +423,9 @@ function drawDocHeader(
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
     doc.setTextColor(GOLD[0], GOLD[1], GOLD[2]);
+    const baseLabel = args.discountBase === 'wholesale' ? 'WHOLESALE' : 'RETAIL';
     doc.text(
-      `${args.defaultDiscountPercent}% DISCOUNT`,
+      `${args.defaultDiscountPercent}% OFF ${baseLabel}`,
       titleX,
       top + 36
     );
