@@ -4,7 +4,9 @@
 
 A Next.js 14 + TypeScript + Tailwind web app for building, saving, and exporting product catalogues. Products come from a Google Sheet populated by an existing Apps Script/Odoo sync. The UI lets staff search products, build a catalogue (drag-drop, bulk add by category/tag), configure columns and discounts, then export as PDF or XLSX.
 
-Live at Vercel (see Practical Tools Vercel memory entry for deploy details).
+Live at `catalogue.tkpapps.com` on Vercel (TKPAPPS team).
+
+**Deploy:** the Vercel project is connected to the `TKPAPPS/tkp-product-catalogue` GitHub repo (the `tkpapps`/`company` git remote), NOT `origin`. GitHub auto-deploy is blocked (commit author isn't a Vercel team member), so a push alone does nothing. After pushing, trigger a manual production deploy via the Vercel REST API. Tokens/IDs and the exact curl command live in the TKP Catalogue Vercel memory entry.
 
 ---
 
@@ -84,7 +86,7 @@ product-catalogue/
         ├── catalogue-server.ts   Business logic (server-only)
         ├── search.ts             In-memory index + filters
         ├── columns.ts            Column config + cell rendering
-        ├── format.ts             formatMoney, formatDate, applyDiscount
+        ├── format.ts             formatMoney, formatDate, applyDiscount, exVat (VAT_RATE)
         ├── export-xlsx.ts        SheetJS XLSX export (client)
         ├── export-pdf.ts         jsPDF export with Hebrew support (client)
         ├── catalogue-name.ts     Name/filename helpers
@@ -106,6 +108,8 @@ Five tabs, all managed by the app:
 | `App_Metadata` | Key-value store (e.g. lastSyncedAt). |
 
 Run `POST /api/setup` once after deploy to create the four writable tabs. Idempotent.
+
+Catalogue settings that don't have their own column (`titleDate`, `discountBase`, `removeVatFromWholesale`, columns visibility/order) are serialized together into the single `columns_visibility_json` cell on the `Catalogues` row. Adding a new per-catalogue setting therefore needs no schema change: add it to the JSON in `saveCatalogue()` and read it back (with a default) in `loadCatalogue()` in `lib/catalogue-server.ts`.
 
 ---
 
@@ -151,6 +155,7 @@ Zustand store, persisted to `localStorage` as `catalogue-draft-v1`.
 14 available columns: `image`, `internalReference`, `productName`, `productNameHe`, `barcode`, `uom`, `packaging`, `category`, `tags`, `salesPrice`, `wholesalePrice`, `discount`, `finalPrice`, `note`.
 - `resolveColumns(opts)` - returns ordered, visible columns for current exportMode
 - `cellText(columnId, context)` / `cellRaw(columnId, context)` - render a cell for display or export
+- VAT: when the catalogue's `removeVatFromWholesale` flag is set, wholesale values are run through `exVat()` (price / 1.07) before display. This affects the `wholesalePrice` column and, when `discountBase === 'wholesale'`, the discounted `finalPrice`. Retail/sales price is never touched.
 
 ### `lib/export-pdf.ts` (client-only)
 Most complex module (~466 lines). Key points:
